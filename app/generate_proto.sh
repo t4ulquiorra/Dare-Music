@@ -3,7 +3,7 @@
 
 set -e
 
-PROTO_DIR="../metroproto"
+PROTO_DIR="src/main/proto"
 OUT_DIR="src/main/java"
 
 if [ ! -f "$PROTO_DIR/listentogether.proto" ]; then
