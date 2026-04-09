@@ -21,7 +21,7 @@ object ListenTogetherServers {
         [
           {
             "name": "Dare Server",
-            "url": "wss://dare-server-4l9f.onrender.com",
+            "url": "wss://dare-server-4f9f.onrender.com",
             "location": "US",
             "operator": "T4 Ulquiorra"
           }
