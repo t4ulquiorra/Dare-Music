@@ -192,8 +192,8 @@
 -dontwarn io.ktor.**
 
 ## Listen Together Protobuf
--keep class com.metrolist.music.listentogether.proto.** { *; }
--keepclassmembers class com.metrolist.music.listentogether.proto.** { *; }
+-keep class com.dare.music.listentogether.proto.** { *; }
+-keepclassmembers class com.dare.music.listentogether.proto.** { *; }
 
 ## Shazam Models
 -keep class com.metrolist.shazamkit.models.** { *; }
