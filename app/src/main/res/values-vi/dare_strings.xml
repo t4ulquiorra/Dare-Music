@@ -356,7 +356,7 @@
     <string name="enable">Cho phép</string>
     <string name="credits_instagram">Instagram</string>
     <string name="save_episode_for_later">Lưu để nghe sau</string>
-    <string name="dare">METROLIST</string>
+    <string name="dare">Dare(誰だ)</string>
     <string name="credits_license_name">GNU General Public License v3.0</string>
     <string name="daily_discover_based_on">Dựa trên %1$s</string>
     <string name="logout_keep">Giữ lại</string>
@@ -514,7 +514,7 @@
     <string name="wrapped_total_artists_subtitle">các nghệ sĩ độc đáo</string>
     <string name="wrapped_total_songs_title">Bạn đã nghe</string>
     <string name="wrapped_total_songs_subtitle">các bài hát độc đáo</string>
-    <string name="wrapped_intro_title">METROLIST</string>
+    <string name="wrapped_intro_title">Dare(誰だ)</string>
     <string name="wrapped_intro_subtitle">đã đến lúc xem bạn đã nghe những gì</string>
     <string name="wrapped_intro_button">đi nào!</string>
     <string name="wrapped_ready_title">WRAPPED CỦA BẠN ĐÃ SẴN SÀNG!</string>

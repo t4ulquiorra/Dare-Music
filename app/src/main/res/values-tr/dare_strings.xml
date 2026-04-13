@@ -248,7 +248,7 @@
     <string name="wrapped_total_artists_subtitle">benzersiz sanatçılar</string>
     <string name="wrapped_total_songs_title">Şunları dinlediniz</string>
     <string name="wrapped_total_songs_subtitle">benzersiz şarkılar</string>
-    <string name="wrapped_intro_title">METROLIST</string>
+    <string name="wrapped_intro_title">Dare(誰だ)</string>
     <string name="wrapped_intro_subtitle">Dinlediklerinize göz atmanın zamanı geldi</string>
     <string name="wrapped_intro_button">hadi başlayalım!</string>
     <string name="wrapped_logo_content_description">Dare Logosu</string>
@@ -615,7 +615,7 @@
     <string name="like_what_i_do">Yaptıklarımdan hoşlanıyor musunuz?</string>
     <string name="buy_mo_a_coffee">Bana bir kahve ısmarla</string>
     <string name="community_and_info">Topluluk ve Bilgi</string>
-    <string name="dare">METROLIST</string>
+    <string name="dare">Dare(誰だ)</string>
     <string name="wanna_play_favorite_song">Onların en sevdiği şarkıyı çalmak ister misin?</string>
     <string name="yeah">Evet</string>
     <string name="stands_with_palestine">Bu proje Filistin\'in yanındadır 🇵🇸</string>

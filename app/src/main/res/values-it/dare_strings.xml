@@ -250,7 +250,7 @@
     <string name="wrapped_total_artists_subtitle">artisti diversi</string>
     <string name="wrapped_total_songs_title">Hai ascoltato</string>
     <string name="wrapped_total_songs_subtitle">canzoni diverse</string>
-    <string name="wrapped_intro_title">METROLIST</string>
+    <string name="wrapped_intro_title">Dare(誰だ)</string>
     <string name="wrapped_intro_subtitle">è l\'ora di vedere cosa hai ascoltato</string>
     <string name="wrapped_intro_button">cominciamo!</string>
     <string name="wrapped_logo_content_description">Logo di Dare</string>
@@ -617,7 +617,7 @@
     <string name="like_what_i_do">Ti piace quello che faccio?</string>
     <string name="buy_mo_a_coffee">Offrimi un caffè</string>
     <string name="community_and_info">Comunità e Informazioni</string>
-    <string name="dare">METROLIST</string>
+    <string name="dare">Dare(誰だ)</string>
     <string name="wanna_play_favorite_song">Vuoi riprodurre il loro brano preferito?</string>
     <string name="yeah">Sì!</string>
     <string name="stands_with_palestine">Questo progetto sostiene la Palestina 🇵🇸</string>
