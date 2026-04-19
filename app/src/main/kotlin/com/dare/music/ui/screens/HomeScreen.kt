@@ -1188,27 +1188,7 @@ fun HomeScreen(
 
 
                 if (isLoading && homePage?.chips.isNullOrEmpty()) {
-                    item(key = "chips_shimmer") {
-                        ShimmerHost(showGradient = false) {
-                            LazyRow(
-                                contentPadding =
-                                    WindowInsets.systemBars
-                                        .only(WindowInsetsSides.Horizontal)
-                                        .asPaddingValues(),
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                            ) {
-                                items(5) {
-                                    TextPlaceholder(
-                                        height = 30.dp,
-                                        shape = RoundedCornerShape(16.dp),
-                                        modifier = Modifier.width(72.dp),
-                                    )
-                                }
-                            }
-                        }
-                    }
-                }
+
 
                 // Show podcast sections FIRST when podcast chip is selected (fixed at top)
                 if (selectedChip?.title?.contains("Podcast", ignoreCase = true) == true) {
@@ -2487,57 +2467,7 @@ fun HomeScreen(
                     }
                 }
 
-                // Only show shimmer during initial loading, not for pagination
-                if (isLoading && homePage?.sections.isNullOrEmpty()) {
-                    item(key = "loading_shimmer") {
-                        ShimmerHost(
-                            modifier = Modifier.animateItem(),
-                        ) {
-                            repeat(2) {
-                                TextPlaceholder(
-                                    height = 36.dp,
-                                    modifier =
-                                        Modifier
-                                            .padding(12.dp)
-                                            .width(250.dp),
-                                )
-                                LazyRow(
-                                    contentPadding =
-                                        WindowInsets.systemBars
-                                            .only(WindowInsetsSides.Horizontal)
-                                            .asPaddingValues(),
-                                ) {
-                                    items(4) {
-                                        GridItemPlaceHolder()
-                                    }
-                                }
-                            }
 
-                            TextPlaceholder(
-                                height = 36.dp,
-                                modifier =
-                                    Modifier
-                                        .padding(vertical = 12.dp, horizontal = 12.dp)
-                                        .width(250.dp),
-                            )
-                            repeat(4) {
-                                Row {
-                                    repeat(2) {
-                                        TextPlaceholder(
-                                            height = MoodAndGenresButtonHeight,
-                                            shape = RoundedCornerShape(6.dp),
-                                            modifier =
-                                                Modifier
-                                                    .padding(horizontal = 12.dp)
-                                                    .width(200.dp),
-                                        )
-                                    }
-                                }
-                            }
-                        }
-                    }
-                }
-            }
 
             HideOnScrollFAB(
                 visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),

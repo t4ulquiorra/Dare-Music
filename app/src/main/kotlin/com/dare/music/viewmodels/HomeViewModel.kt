@@ -359,15 +359,15 @@ class HomeViewModel @Inject constructor(
                 } else if (relatedSongs.isNotEmpty()) {
                     quickPicks.value = relatedSongs.shuffled().take(20)
                 } else {
-                    // Fresh install fallback — use seed song to fetch related content
+                    // Fresh install fallback — insert seed songs into DB then use them
                     val seedEndpoint = YouTube.next(WatchEndpoint(videoId = "J7p4bzqLvCw")).getOrNull()?.relatedEndpoint
                     if (seedEndpoint != null) {
                         YouTube.related(seedEndpoint).onSuccess { page ->
                             val seedSongs = mutableListOf<Song>()
                             page.songs.take(20).forEach { ytSong ->
-                                database.song(ytSong.id).first()?.let { localSong ->
-                                    seedSongs.add(localSong)
-                                }
+                                val song = ytSong.toMediaMetadata()
+                                database.transaction { insert(song) }
+                                database.song(ytSong.id).first()?.let { seedSongs.add(it) }
                             }
                             if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
                         }
