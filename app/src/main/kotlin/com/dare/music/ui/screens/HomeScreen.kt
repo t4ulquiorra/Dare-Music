@@ -1160,24 +1160,6 @@ fun HomeScreen(
                             style = MaterialTheme.typography.displaySmall,
                         )
                         Row {
-                            IconButton(onClick = { navController.navigate("history") }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.history),
-                                    contentDescription = null,
-                                )
-                            }
-                            IconButton(onClick = { navController.navigate("stats") }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.stats),
-                                    contentDescription = null,
-                                )
-                            }
-                            IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.group_outlined),
-                                    contentDescription = null,
-                                )
-                            }
                             IconButton(onClick = { showAccountDialog = true }) {
                                 Icon(
                                     painter = painterResource(R.drawable.account),

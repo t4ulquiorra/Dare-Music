@@ -45,7 +45,14 @@ sealed class Screens(
         route = "library"
     )
 
+    object History : Screens(
+        titleId = R.string.history,
+        iconIdInactive = R.drawable.history,
+        iconIdActive = R.drawable.history,
+        route = "history"
+    )
+
     companion object {
-        val MainScreens = listOf(Home, Search, ListenTogether, Library)
+        val MainScreens = listOf(Home, Search, Library, History, ListenTogether)
     }
 }

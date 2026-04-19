@@ -242,6 +242,26 @@ fun AccountSettings(
             )
         }
 
+        Spacer(Modifier.height(8.dp))
+
+        Column(
+            modifier = Modifier
+                .clip(RoundedCornerShape(16.dp))
+                .background(MaterialTheme.colorScheme.surfaceContainer)
+        ) {
+            PreferenceEntry(
+                title = { Text(stringResource(R.string.stats)) },
+                icon = { Icon(painterResource(R.drawable.stats), null) },
+                onClick = {
+                    onClose()
+                    navController.navigate("stats")
+                },
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .background(MaterialTheme.colorScheme.surfaceContainer)
+            )
+        }
+
         Material3SettingsGroup(
             items = listOf(
                 Material3SettingsItem(
