@@ -721,7 +721,7 @@ class MainActivity : ComponentActivity() {
                 val playerBottomSheetState =
                     rememberBottomSheetState(
                         dismissedBound = 0.dp,
-                        collapsedBound = if (isLandscape) 0.dp else
+                        collapsedBound =
                             bottomInset +
                                 (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
                                 (if (useNewMiniPlayerDesign) MiniPlayerBottomSpacing else 0.dp) +
@@ -1065,6 +1065,9 @@ class MainActivity : ComponentActivity() {
                                         pureBlack = pureBlack,
                                         positionState = positionState,
                                         durationState = durationState,
+                                        modifier = if (isLandscape) Modifier.graphicsLayer {
+                                            alpha = if (playerBottomSheetState.isCollapsed) 0f else 1f
+                                        } else Modifier,
                                     )
 
                                     if (isLandscape) {
