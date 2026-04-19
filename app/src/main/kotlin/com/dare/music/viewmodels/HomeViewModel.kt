@@ -569,13 +569,13 @@ class HomeViewModel @Inject constructor(
                     )
                 }
 
-            similarRecommendations.value = (artistRecommendations + songRecommendations + albumRecommendations).shuffled()
-            relatedAlbums.value = similarRecommendations.value
-                ?.flatMap { it.items }
-                ?.filterIsInstance<com.dare.innertube.models.AlbumItem>()
-                ?.distinctBy { it.id }
-                ?.take(10)
-                ?: emptyList()
+            val allRecommendations = (artistRecommendations + songRecommendations + albumRecommendations).shuffled()
+            similarRecommendations.value = allRecommendations
+            relatedAlbums.value = allRecommendations
+                .flatMap { it.items }
+                .filterIsInstance<com.dare.innertube.models.AlbumItem>()
+                .distinctBy { it.id }
+                .take(10)
             relatedAlbums.value = similarRecommendations.value
                 ?.flatMap { it.items }
                 ?.filterIsInstance<com.dare.innertube.models.AlbumItem>()
