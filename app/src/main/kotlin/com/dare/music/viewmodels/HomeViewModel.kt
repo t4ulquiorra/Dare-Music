@@ -46,6 +46,7 @@ import com.dare.music.utils.SyncUtils
 import com.dare.music.utils.dataStore
 import com.dare.music.utils.get
 import com.dare.music.utils.reportException
+import com.dare.music.models.toMediaMetadata
 import dagger.hilt.android.lifecycle.HiltViewModel
 import dagger.hilt.android.qualifiers.ApplicationContext
 import kotlinx.coroutines.Dispatchers

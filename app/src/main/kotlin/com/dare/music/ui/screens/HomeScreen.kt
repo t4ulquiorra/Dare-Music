@@ -2465,10 +2465,6 @@ fun HomeScreen(
 
                         else -> {}
                     }
-                }
-
-
-
             HideOnScrollFAB(
                 visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),
                 lazyListState = lazylistState,
