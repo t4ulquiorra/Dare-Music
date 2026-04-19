@@ -38,6 +38,7 @@ import androidx.compose.foundation.layout.add
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
@@ -1059,15 +1060,14 @@ class MainActivity : ComponentActivity() {
 
                             if (!showRail && currentRoute != "wrapped") {
                                 Box {
-                                    if (!isLandscape || !playerBottomSheetState.isCollapsed) {
-                                        BottomSheetPlayer(
-                                            state = playerBottomSheetState,
-                                            navController = navController,
-                                            pureBlack = pureBlack,
-                                            positionState = positionState,
-                                            durationState = durationState,
-                                        )
-                                    }
+                                    BottomSheetPlayer(
+                                        state = playerBottomSheetState,
+                                        navController = navController,
+                                        pureBlack = pureBlack,
+                                        positionState = positionState,
+                                        durationState = durationState,
+                                        modifier = if (isLandscape && !playerBottomSheetState.isExpanded) Modifier.requiredSize(0.dp) else Modifier,
+                                    )
 
                                     if (isLandscape) {
                                         Row(
@@ -1087,11 +1087,17 @@ class MainActivity : ComponentActivity() {
                                                 modifier = Modifier.weight(1f),
                                             )
                                             if (!playerBottomSheetState.isDismissed) {
-                                                MiniPlayer(
-                                                    positionState = positionState,
-                                                    durationState = durationState,
-                                                    modifier = Modifier.width(350.dp),
-                                                )
+                                                Box(
+                                                    modifier = Modifier
+                                                        .width(350.dp)
+                                                        .height(MiniPlayerHeight)
+                                                        .clickable { playerBottomSheetState.expandSoft() },
+                                                ) {
+                                                    MiniPlayer(
+                                                        positionState = positionState,
+                                                        durationState = durationState,
+                                                    )
+                                                }
                                             }
                                         }
                                     } else {
