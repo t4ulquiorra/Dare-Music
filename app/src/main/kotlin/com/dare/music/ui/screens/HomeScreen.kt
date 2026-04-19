@@ -1146,7 +1146,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 0.dp, bottom = 4.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
@@ -1167,9 +1167,15 @@ fun HomeScreen(
                                     contentDescription = null,
                                 )
                             }
-                            IconButton(onClick = { navController.navigate("settings") }) {
+                            IconButton(onClick = { navController.navigate("listen_together_from_topbar") }) {
                                 Icon(
-                                    painter = painterResource(R.drawable.settings),
+                                    painter = painterResource(R.drawable.group_outlined),
+                                    contentDescription = null,
+                                )
+                            }
+                            IconButton(onClick = { navController.navigate("account") }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.account),
                                     contentDescription = null,
                                 )
                             }
