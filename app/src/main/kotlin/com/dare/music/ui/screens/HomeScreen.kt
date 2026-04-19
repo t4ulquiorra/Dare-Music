@@ -2165,8 +2165,6 @@ fun HomeScreen(
                             }
                         }
 
-                        else -> {}
-
                         is HomeSection.HomePageSection -> {
                             // Skip HomePageSection rendering when podcast chip is selected
                             // Podcast sections are handled separately with special UI
@@ -2554,6 +2552,8 @@ fun HomeScreen(
                                 }
                             }
                         }
+
+                        else -> {}
                     }
                 },
                 onRecognitionClick = {
