@@ -1059,16 +1059,15 @@ class MainActivity : ComponentActivity() {
 
                             if (!showRail && currentRoute != "wrapped") {
                                 Box {
-                                    BottomSheetPlayer(
-                                        state = playerBottomSheetState,
-                                        navController = navController,
-                                        pureBlack = pureBlack,
-                                        positionState = positionState,
-                                        durationState = durationState,
-                                        modifier = if (isLandscape) Modifier.graphicsLayer {
-                                            alpha = if (playerBottomSheetState.isCollapsed) 0f else 1f
-                                        } else Modifier,
-                                    )
+                                    if (!isLandscape || !playerBottomSheetState.isCollapsed) {
+                                        BottomSheetPlayer(
+                                            state = playerBottomSheetState,
+                                            navController = navController,
+                                            pureBlack = pureBlack,
+                                            positionState = positionState,
+                                            durationState = durationState,
+                                        )
+                                    }
 
                                     if (isLandscape) {
                                         Row(
