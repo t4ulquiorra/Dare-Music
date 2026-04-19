@@ -643,7 +643,6 @@ fun HomeScreen(
 
     val quickPicks by viewModel.quickPicks.collectAsState()
     val relatedAlbums by viewModel.relatedAlbums.collectAsState()
-    val relatedAlbums by viewModel.relatedAlbums.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val similarRecommendations by viewModel.similarRecommendations.collectAsState()

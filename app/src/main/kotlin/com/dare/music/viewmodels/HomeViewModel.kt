@@ -95,7 +95,6 @@ class HomeViewModel @Inject constructor(
     val keepListening = MutableStateFlow<List<LocalItem>?>(null)
     val similarRecommendations = MutableStateFlow<List<SimilarRecommendation>?>(null)
     val relatedAlbums = MutableStateFlow<List<com.dare.innertube.models.AlbumItem>>(emptyList())
-    val relatedAlbums = MutableStateFlow<List<com.dare.innertube.models.AlbumItem>>(emptyList())
     val accountPlaylists = MutableStateFlow<List<PlaylistItem>?>(null)
     val homePage = MutableStateFlow<HomePage?>(null)
     val explorePage = MutableStateFlow<ExplorePage?>(null)
