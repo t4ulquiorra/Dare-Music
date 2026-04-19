@@ -2425,6 +2425,8 @@ fun HomeScreen(
                                 }
                             }
                         }
+
+                        else -> {}
                     }
                 }
 
@@ -2552,8 +2554,6 @@ fun HomeScreen(
                                 }
                             }
                         }
-
-                        else -> {}
                     }
                 },
                 onRecognitionClick = {
