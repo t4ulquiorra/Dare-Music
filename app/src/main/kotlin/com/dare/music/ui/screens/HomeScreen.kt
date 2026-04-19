@@ -173,6 +173,7 @@ sealed class HomeSection(
     data object SpeedDial : HomeSection("speed_dial", 100)
 
     data object QuickPicks : HomeSection("quick_picks", 90)
+    data object RelatedAlbums : HomeSection("related_albums", 80)
 
     data object DailyDiscover : HomeSection("daily_discover", 80)
 
@@ -641,6 +642,8 @@ fun HomeScreen(
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
     val quickPicks by viewModel.quickPicks.collectAsState()
+    val relatedAlbums by viewModel.relatedAlbums.collectAsState()
+    val relatedAlbums by viewModel.relatedAlbums.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val similarRecommendations by viewModel.similarRecommendations.collectAsState()
@@ -1011,6 +1014,7 @@ fun HomeScreen(
             val chipActive = selectedChip != null
 
             if (!chipActive && quickPicks?.isNotEmpty() == true) list.add(HomeSection.QuickPicks)
+            if (!chipActive && relatedAlbums.isNotEmpty()) list.add(HomeSection.RelatedAlbums)
 
 
 
@@ -1920,6 +1924,27 @@ fun HomeScreen(
                             }
                         }
 
+                        HomeSection.RelatedAlbums -> {
+                            relatedAlbums.takeIf { it.isNotEmpty() }?.let { albums ->
+                                item(key = "related_albums_title") {
+                                    Text(
+                                        text = "Related albums",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
+                                }
+                                item(key = "related_albums_list") {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        items(albums) { album ->
+                                            ytGridItem(album)
+                                        }
+                                    }
+                                }
+                            }
+                        }
                         HomeSection.KeepListening -> {
                             keepListening?.takeIf { it.isNotEmpty() }?.let { keepListening ->
                                 item(key = "keep_listening_title") {
