@@ -354,7 +354,25 @@ class HomeViewModel @Inject constructor(
                     .shuffled()
                     .take(20)
 
-                quickPicks.value = combined.ifEmpty { relatedSongs.shuffled().take(20) }
+                if (combined.isNotEmpty()) {
+                    quickPicks.value = combined
+                } else if (relatedSongs.isNotEmpty()) {
+                    quickPicks.value = relatedSongs.shuffled().take(20)
+                } else {
+                    // Fresh install fallback — use seed song to fetch related content
+                    val seedEndpoint = YouTube.next(WatchEndpoint(videoId = "J7p4bzqLvCw")).getOrNull()?.relatedEndpoint
+                    if (seedEndpoint != null) {
+                        YouTube.related(seedEndpoint).onSuccess { page ->
+                            val seedSongs = mutableListOf<Song>()
+                            page.songs.take(20).forEach { ytSong ->
+                                database.song(ytSong.id).first()?.let { localSong ->
+                                    seedSongs.add(localSong)
+                                }
+                            }
+                            if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
+                        }
+                    }
+                }
             }
             QuickPicks.LAST_LISTEN -> {
                 val song = database.events().first().firstOrNull()?.song
