@@ -2468,6 +2468,8 @@ fun HomeScreen(
             }
         }
 
+            }
+
             HideOnScrollFAB(
                 visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),
                 lazyListState = lazylistState,
