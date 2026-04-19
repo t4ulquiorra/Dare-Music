@@ -1143,11 +1143,38 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "page_title") {
-                    Text(
-                        text = "Quick picks",
-                        style = MaterialTheme.typography.displaySmall,
-                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
-                    )
+                    Row(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                    ) {
+                        Text(
+                            text = "Quick picks",
+                            style = MaterialTheme.typography.displaySmall,
+                        )
+                        Row {
+                            IconButton(onClick = { navController.navigate("history") }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.history),
+                                    contentDescription = null,
+                                )
+                            }
+                            IconButton(onClick = { navController.navigate("stats") }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.stats),
+                                    contentDescription = null,
+                                )
+                            }
+                            IconButton(onClick = { navController.navigate("settings") }) {
+                                Icon(
+                                    painter = painterResource(R.drawable.settings),
+                                    contentDescription = null,
+                                )
+                            }
+                        }
+                    }
                 }
 
 
