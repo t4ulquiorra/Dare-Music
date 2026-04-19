@@ -1142,6 +1142,13 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
+                item(key = "page_title") {
+                    Text(
+                        text = "Quick picks",
+                        style = MaterialTheme.typography.displaySmall,
+                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                    )
+                }
 
 
                 if (isLoading && homePage?.chips.isNullOrEmpty()) {
