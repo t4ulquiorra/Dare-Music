@@ -153,7 +153,6 @@ fun Queue(
     textButtonColor: Color,
     iconButtonColor: Color,
     pureBlack: Boolean,
-    showInlineLyrics: Boolean,
     playerBackground: PlayerBackgroundStyle = PlayerBackgroundStyle.DEFAULT,
 ) {
     val context = LocalContext.current
