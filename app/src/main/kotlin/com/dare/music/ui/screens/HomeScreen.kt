@@ -503,7 +503,6 @@ fun DailyDiscoverCard(
     val database = LocalDatabase.current
     val playCount by database.getLifetimePlayCount(dailyDiscover.recommendation.id).collectAsState(initial = 0)
     val menuState = LocalMenuState.current
-    var showAccountDialog by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
 
     val song = dailyDiscover.recommendation as? SongItem
@@ -634,6 +633,7 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val menuState = LocalMenuState.current
+    var showAccountDialog by remember { mutableStateOf(false) }
     val bottomSheetPageState = LocalBottomSheetPageState.current
     val database = LocalDatabase.current
     val playerConnection = LocalPlayerConnection.current ?: return
