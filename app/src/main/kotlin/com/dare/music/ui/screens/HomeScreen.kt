@@ -1011,7 +1011,6 @@ fun HomeScreen(
             val chipActive = selectedChip != null
 
             if (!chipActive && quickPicks?.isNotEmpty() == true) list.add(HomeSection.QuickPicks)
-            if (!chipActive && keepListening?.isNotEmpty() == true) list.add(HomeSection.KeepListening)
 
 
 
@@ -1146,7 +1145,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 4.dp, top = 0.dp, bottom = 4.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 0.dp, bottom = 24.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
