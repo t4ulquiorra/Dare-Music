@@ -1175,7 +1175,7 @@ fun HomeScreen(
                                     contentDescription = null,
                                 )
                             }
-                            IconButton(onClick = { navController.navigate("account") }) {
+                            IconButton(onClick = { navController.navigate("account_settings") }) {
                                 Icon(
                                     painter = painterResource(R.drawable.account),
                                     contentDescription = null,

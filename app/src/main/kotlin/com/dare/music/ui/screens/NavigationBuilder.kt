@@ -42,6 +42,7 @@ import com.dare.music.ui.screens.recognition.RecognitionScreen
 import com.dare.music.ui.screens.search.OnlineSearchResult
 import com.dare.music.ui.screens.search.SearchScreen
 import com.dare.music.ui.screens.settings.AboutScreen
+import com.dare.music.ui.screens.settings.AccountSettings
 import com.dare.music.ui.screens.settings.AiSettings
 import com.dare.music.ui.screens.settings.AndroidAutoSettings
 import com.dare.music.ui.screens.settings.AppearanceSettings
@@ -415,6 +416,10 @@ fun NavGraphBuilder.navigationBuilder(
 
     composable("login") {
         LoginScreen(navController)
+    }
+
+    composable("account_settings") {
+        AccountSettings(navController)
     }
 
     composable("wrapped") {
