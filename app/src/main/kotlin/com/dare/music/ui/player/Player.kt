@@ -197,6 +197,8 @@ fun BottomSheetPlayer(
     navController: NavController,
     modifier: Modifier = Modifier,
     pureBlack: Boolean,
+    positionState: MutableLongState,
+    durationState: MutableLongState,
 ) {
     val context = LocalContext.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -335,11 +337,6 @@ fun BottomSheetPlayer(
 
     // Use Cast state when casting, otherwise local player
     val effectiveIsPlaying = if (isCasting) castIsPlaying else isPlaying
-
-    // Use State objects for position/duration to pass to MiniPlayer without causing recomposition
-    // These states persist across playback state changes to ensure continuous progress updates
-    val positionState = remember { mutableLongStateOf(0L) }
-    val durationState = remember { mutableLongStateOf(0L) }
 
     // Convenience accessors for local use
     var position by positionState

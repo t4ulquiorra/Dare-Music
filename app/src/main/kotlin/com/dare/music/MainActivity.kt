@@ -73,6 +73,8 @@ import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.MutableLongState
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.saveable.rememberSaveable
@@ -174,6 +176,7 @@ import com.dare.music.ui.component.rememberBottomSheetState
 import com.dare.music.ui.component.shimmer.ShimmerTheme
 import com.dare.music.ui.menu.YouTubeSongMenu
 import com.dare.music.ui.player.BottomSheetPlayer
+import com.dare.music.ui.player.MiniPlayer
 import com.dare.music.ui.screens.Screens
 import com.dare.music.ui.screens.navigationBuilder
 import com.dare.music.ui.screens.settings.ChangelogScreen
@@ -717,7 +720,7 @@ class MainActivity : ComponentActivity() {
                 val playerBottomSheetState =
                     rememberBottomSheetState(
                         dismissedBound = 0.dp,
-                        collapsedBound =
+                        collapsedBound = if (isLandscape) 0.dp else
                             bottomInset +
                                 (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
                                 (if (useNewMiniPlayerDesign) MiniPlayerBottomSpacing else 0.dp) +
@@ -1047,6 +1050,9 @@ class MainActivity : ComponentActivity() {
                                     }
                                 }
 
+                            val positionState = remember { mutableLongStateOf(0L) }
+                            val durationState = remember { mutableLongStateOf(0L) }
+
                             // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
@@ -1056,38 +1062,64 @@ class MainActivity : ComponentActivity() {
                                         state = playerBottomSheetState,
                                         navController = navController,
                                         pureBlack = pureBlack,
+                                        positionState = positionState,
+                                        durationState = durationState,
                                     )
 
-                                    AppNavigationBar(
-                                        navigationItems = navigationItems,
-                                        currentRoute = currentRoute,
-                                        onItemClick = onNavItemClick,
-                                        pureBlack = pureBlack,
-                                        slimNav = slimNav,
-                                        onSearchLongClick = onSearchLongClick,
-                                        modifier =
-                                            Modifier
-                                                .align(Alignment.BottomCenter)
-                                                .height(bottomInset + navPadding)
-                                                // Use graphicsLayer instead of offset to avoid recomposition
-                                                // graphicsLayer runs during draw phase, not composition phase
-                                                .graphicsLayer {
-                                                    val navBarHeightPx = navigationBarHeight.toPx()
-                                                    val totalHeightPx = navBarTotalHeight.toPx()
+                                    if (isLandscape) {
+                                        Row(
+                                            modifier = Modifier
+                                                .align(Alignment.BottomStart)
+                                                .fillMaxWidth()
+                                                .height(bottomInset + navPadding),
+                                            verticalAlignment = Alignment.CenterVertically,
+                                        ) {
+                                            AppNavigationBar(
+                                                navigationItems = navigationItems,
+                                                currentRoute = currentRoute,
+                                                onItemClick = onNavItemClick,
+                                                pureBlack = pureBlack,
+                                                slimNav = slimNav,
+                                                onSearchLongClick = onSearchLongClick,
+                                                modifier = Modifier.weight(1f),
+                                            )
+                                            if (!playerBottomSheetState.isDismissed) {
+                                                MiniPlayer(
+                                                    positionState = positionState,
+                                                    durationState = durationState,
+                                                    modifier = Modifier.width(350.dp),
+                                                )
+                                            }
+                                        }
+                                    } else {
+                                        AppNavigationBar(
+                                            navigationItems = navigationItems,
+                                            currentRoute = currentRoute,
+                                            onItemClick = onNavItemClick,
+                                            pureBlack = pureBlack,
+                                            slimNav = slimNav,
+                                            onSearchLongClick = onSearchLongClick,
+                                            modifier =
+                                                Modifier
+                                                    .align(Alignment.BottomCenter)
+                                                    .height(bottomInset + navPadding)
+                                                    .graphicsLayer {
+                                                        val navBarHeightPx = navigationBarHeight.toPx()
+                                                        val totalHeightPx = navBarTotalHeight.toPx()
 
-                                                    translationY =
-                                                        if (navBarHeightPx == 0f) {
-                                                            totalHeightPx
-                                                        } else {
-                                                            // Read progress only during draw phase
-                                                            val progress = playerBottomSheetState.progress.coerceIn(0f, 1f)
-                                                            val slideOffset = totalHeightPx * progress
-                                                            val hideOffset =
-                                                                totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
-                                                            slideOffset + hideOffset
-                                                        }
-                                                },
-                                    )
+                                                        translationY =
+                                                            if (navBarHeightPx == 0f) {
+                                                                totalHeightPx
+                                                            } else {
+                                                                val progress = playerBottomSheetState.progress.coerceIn(0f, 1f)
+                                                                val slideOffset = totalHeightPx * progress
+                                                                val hideOffset =
+                                                                    totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
+                                                                slideOffset + hideOffset
+                                                            }
+                                                    },
+                                        )
+                                    }
 
                                     Box(
                                         modifier =
@@ -1115,6 +1147,8 @@ class MainActivity : ComponentActivity() {
                                         state = playerBottomSheetState,
                                         navController = navController,
                                         pureBlack = pureBlack,
+                                        positionState = positionState,
+                                        durationState = durationState,
                                     )
                                 }
 
