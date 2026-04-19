@@ -419,7 +419,11 @@ fun NavGraphBuilder.navigationBuilder(
     }
 
     composable("account_settings") {
-        AccountSettings(navController)
+        AccountSettings(
+            navController = navController,
+            onClose = { navController.navigateUp() },
+            latestVersionName = latestVersionName,
+        )
     }
 
     composable("wrapped") {
