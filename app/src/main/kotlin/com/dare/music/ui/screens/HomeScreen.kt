@@ -137,6 +137,7 @@ import com.dare.music.ui.component.ArtistGridItem
 import com.dare.music.ui.component.ChipsRow
 import com.dare.music.ui.component.HideOnScrollFAB
 import com.dare.music.ui.component.LocalBottomSheetPageState
+import com.dare.music.ui.component.AccountSettingsDialog
 import com.dare.music.ui.component.LocalMenuState
 import com.dare.music.ui.component.NavigationTitle
 import com.dare.music.ui.component.RandomizeGridItem
@@ -502,6 +503,7 @@ fun DailyDiscoverCard(
     val database = LocalDatabase.current
     val playCount by database.getLifetimePlayCount(dailyDiscover.recommendation.id).collectAsState(initial = 0)
     val menuState = LocalMenuState.current
+    var showAccountDialog by remember { mutableStateOf(false) }
     val haptic = LocalHapticFeedback.current
 
     val song = dailyDiscover.recommendation as? SongItem
@@ -1176,7 +1178,7 @@ fun HomeScreen(
                                     contentDescription = null,
                                 )
                             }
-                            IconButton(onClick = { navController.navigate("account_settings") }) {
+                            IconButton(onClick = { showAccountDialog = true }) {
                                 Icon(
                                     painter = painterResource(R.drawable.account),
                                     contentDescription = null,
@@ -2471,5 +2473,13 @@ fun HomeScreen(
             }
 
         }
+    }
+
+    if (showAccountDialog) {
+        AccountSettingsDialog(
+            navController = navController,
+            onDismiss = { showAccountDialog = false },
+            latestVersionName = "",
+        )
     }
 }
