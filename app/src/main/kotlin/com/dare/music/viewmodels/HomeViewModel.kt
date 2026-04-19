@@ -576,12 +576,7 @@ class HomeViewModel @Inject constructor(
                 .filterIsInstance<com.dare.innertube.models.AlbumItem>()
                 .distinctBy { it.id }
                 .take(10)
-            relatedAlbums.value = similarRecommendations.value
-                ?.flatMap { it.items }
-                ?.filterIsInstance<com.dare.innertube.models.AlbumItem>()
-                ?.distinctBy { it.id }
-                ?.take(10)
-                ?: emptyList()
+
             allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() +
                     homePage.value?.sections?.flatMap { it.items }.orEmpty()
         }
