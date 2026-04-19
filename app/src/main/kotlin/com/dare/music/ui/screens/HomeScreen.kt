@@ -1148,7 +1148,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 4.dp, top = 0.dp, bottom = 24.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 0.dp, bottom = 24.dp).offset(y = (-16).dp).offset(y = (-16).dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
