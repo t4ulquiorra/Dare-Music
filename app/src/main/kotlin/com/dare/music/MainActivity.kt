@@ -40,7 +40,6 @@ import androidx.compose.foundation.layout.displayCutout
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.fillMaxWidth
-import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
@@ -179,7 +178,6 @@ import com.dare.music.ui.component.rememberBottomSheetState
 import com.dare.music.ui.component.shimmer.ShimmerTheme
 import com.dare.music.ui.menu.YouTubeSongMenu
 import com.dare.music.ui.player.BottomSheetPlayer
-import com.dare.music.ui.player.MiniPlayer
 import com.dare.music.ui.screens.Screens
 import com.dare.music.ui.screens.navigationBuilder
 import com.dare.music.ui.screens.settings.ChangelogScreen
@@ -1067,42 +1065,10 @@ class MainActivity : ComponentActivity() {
                                         pureBlack = pureBlack,
                                         positionState = positionState,
                                         durationState = durationState,
-                                        modifier = if (isLandscape && !playerBottomSheetState.isExpanded) Modifier.requiredSize(0.dp) else Modifier,
+                                        modifier = Modifier,
                                     )
 
-                                    if (isLandscape) {
-                                        Row(
-                                            modifier = Modifier
-                                                .align(Alignment.BottomStart)
-                                                .fillMaxWidth()
-                                                .height(bottomInset + navPadding),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            AppNavigationBar(
-                                                navigationItems = navigationItems,
-                                                currentRoute = currentRoute,
-                                                onItemClick = onNavItemClick,
-                                                pureBlack = pureBlack,
-                                                slimNav = slimNav,
-                                                onSearchLongClick = onSearchLongClick,
-                                                modifier = Modifier.weight(1f),
-                                            )
-                                            if (!playerBottomSheetState.isDismissed) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .width(350.dp)
-                                                        .height(MiniPlayerHeight)
-                                                        .clickable { playerBottomSheetState.expandSoft() },
-                                                ) {
-                                                    MiniPlayer(
-                                                        positionState = positionState,
-                                                        durationState = durationState,
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    } else {
-                                        AppNavigationBar(
+                                    AppNavigationBar(
                                             navigationItems = navigationItems,
                                             currentRoute = currentRoute,
                                             onItemClick = onNavItemClick,
@@ -1129,7 +1095,6 @@ class MainActivity : ComponentActivity() {
                                                             }
                                                     },
                                         )
-                                    }
 
                                     Box(
                                         modifier =
