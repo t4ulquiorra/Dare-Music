@@ -1067,41 +1067,9 @@ class MainActivity : ComponentActivity() {
                                         pureBlack = pureBlack,
                                         positionState = positionState,
                                         durationState = durationState,
-                                        modifier = if (isLandscape && !playerBottomSheetState.isExpanded) Modifier.requiredSize(0.dp) else Modifier,
+                                        modifier = Modifier,
                                     )
 
-                                    if (isLandscape) {
-                                        Row(
-                                            modifier = Modifier
-                                                .align(Alignment.BottomStart)
-                                                .fillMaxWidth()
-                                                .height(bottomInset + navPadding),
-                                            verticalAlignment = Alignment.CenterVertically,
-                                        ) {
-                                            AppNavigationBar(
-                                                navigationItems = navigationItems,
-                                                currentRoute = currentRoute,
-                                                onItemClick = onNavItemClick,
-                                                pureBlack = pureBlack,
-                                                slimNav = slimNav,
-                                                onSearchLongClick = onSearchLongClick,
-                                                modifier = Modifier.weight(1f),
-                                            )
-                                            if (!playerBottomSheetState.isDismissed) {
-                                                Box(
-                                                    modifier = Modifier
-                                                        .width(350.dp)
-                                                        .height(MiniPlayerHeight)
-                                                        .clickable { playerBottomSheetState.expandSoft() },
-                                                ) {
-                                                    MiniPlayer(
-                                                        positionState = positionState,
-                                                        durationState = durationState,
-                                                    )
-                                                }
-                                            }
-                                        }
-                                    } else {
                                         AppNavigationBar(
                                             navigationItems = navigationItems,
                                             currentRoute = currentRoute,
