@@ -324,66 +324,70 @@ class HomeViewModel @Inject constructor(
         dailyDiscover.value = items.toList().distinctBy { it.recommendation.id }.shuffled()
     }
 
+    private val curatedSeedIds = listOf(
+        "u6lihZAcy4s", // Save Your Tears - The Weeknd
+        "-rey3m8SWQI", // Be the One - Dua Lipa
+        "dqRZDebPIGs", // In Your Eyes - The Weeknd
+        "1G4isv_Fylg",  // Paradise - Coldplay
+        "dvgZkm1xWPE", // Viva La Vida - Coldplay
+        "FM7MFYoylVs", // Something Just Like This - Chainsmokers & Coldplay
+        "YykjpeuMNEk", // Hymn for the Weekend - Coldplay
+        "VPRjCeoBqrI", // A Sky Full of Stars - Coldplay
+        "fKopy74weus", // Thunder - Imagine Dragons
+        "7wtfhZwyrcc", // Believer - Imagine Dragons
+        "qFLhGq0060w", // I Feel It Coming - The Weeknd ft. Daft Punk
+        "wXhTHyIgQ_U", // Circles - Post Malone
+        "XXYlFuWEuKI", // Save Your Tears Remix - The Weeknd & Ariana Grande
+        "34Na4j8AVgA", // Starboy - The Weeknd ft. Daft Punk
+        "E07s5ZYygMg", // Watermelon Sugar - Harry Styles
+        "JRfuAukYTKg", // Titanium - David Guetta ft. Sia
+        "JGwWNGJdvx8", // Shape of You - Ed Sheeran
+        "IcrbM1l_BoI", // Wake Me Up - Avicii
+        "gOsM-DYAEhY", // Whatever It Takes - Imagine Dragons
+        "47dtFZ8CFo8"  // Safe and Sound - Capital Cities
+    )
+
     private suspend fun getQuickPicks() {
         val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-        when (quickPicksEnum.first()) {
-            QuickPicks.QUICK_PICKS -> {
-                val relatedSongs = database.quickPicks().first().filterVideoSongs(hideVideoSongs)
-                val forgotten = database.forgottenFavorites().first().filterVideoSongs(hideVideoSongs).take(8)
 
-                // Get similar songs from YouTube based on recent listening
-                val recentSong = database.events().first().firstOrNull()?.song
-                val ytSimilarSongs = mutableListOf<Song>()
+        // Use recent song as seed if available, otherwise pick a random curated seed
+        val recentSong = database.events().first().firstOrNull()?.song
+        val seedVideoId = recentSong?.id ?: curatedSeedIds.random()
 
-                val seedVideoId = recentSong?.id ?: "J7p4bzqLvCw"
-                val endpoint = YouTube.next(WatchEndpoint(videoId = seedVideoId)).getOrNull()?.relatedEndpoint
-                if (endpoint != null) {
-                    YouTube.related(endpoint).onSuccess { page ->
-                        page.songs.take(20).forEach { ytSong ->
-                            val song = ytSong.toMediaMetadata()
-                            database.transaction { insert(song) }
-                            database.song(ytSong.id).first()?.let { localSong ->
-                                if (!hideVideoSongs || !localSong.song.isVideo) {
-                                    ytSimilarSongs.add(localSong)
-                                }
-                            }
+        val endpoint = YouTube.next(WatchEndpoint(videoId = seedVideoId)).getOrNull()?.relatedEndpoint
+        if (endpoint != null) {
+            YouTube.related(endpoint).onSuccess { page ->
+                val songs = mutableListOf<Song>()
+                page.songs.take(20).forEach { ytSong ->
+                    val song = ytSong.toMediaMetadata()
+                    database.transaction { insert(song) }
+                    database.song(ytSong.id).first()?.let { localSong ->
+                        if (!hideVideoSongs || !localSong.song.isVideo) {
+                            songs.add(localSong)
                         }
                     }
                 }
-
-                // Combine all sources and remove duplicates
-                val combined = (relatedSongs + forgotten + ytSimilarSongs)
-                    .distinctBy { it.id }
-                    .shuffled()
-                    .take(20)
-
-                if (combined.isNotEmpty()) {
-                    quickPicks.value = combined
-                } else if (relatedSongs.isNotEmpty()) {
-                    quickPicks.value = relatedSongs.shuffled().take(20)
-                } else {
-                    // Fresh install fallback — insert seed songs into DB then use them
-                    val seedEndpoint = YouTube.next(WatchEndpoint(videoId = "J7p4bzqLvCw")).getOrNull()?.relatedEndpoint
-                    if (seedEndpoint != null) {
-                        YouTube.related(seedEndpoint).onSuccess { page ->
-                            val seedSongs = mutableListOf<Song>()
-                            page.songs.take(20).forEach { ytSong ->
-                                val song = ytSong.toMediaMetadata()
-                                database.transaction { insert(song) }
-                                database.song(ytSong.id).first()?.let { seedSongs.add(it) }
-                            }
-                            if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
-                        }
-                    }
-                }
-            }
-            QuickPicks.LAST_LISTEN -> {
-                val song = database.events().first().firstOrNull()?.song
-                if (song != null && database.hasRelatedSongs(song.id)) {
-                    quickPicks.value = database.getRelatedSongs(song.id).first().filterVideoSongs(hideVideoSongs).shuffled().take(20)
+                if (songs.isNotEmpty()) {
+                    quickPicks.value = songs
+                    return
                 }
             }
         }
+
+        // Fallback: insert and show curated songs directly
+        val fallbackSongs = mutableListOf<Song>()
+        for (id in curatedSeedIds.shuffled()) {
+            YouTube.next(WatchEndpoint(videoId = id)).getOrNull()?.let { nextPage ->
+                val ytSong = nextPage.currentPage?.songs?.firstOrNull()
+                if (ytSong != null) {
+                    val song = ytSong.toMediaMetadata()
+                    database.transaction { insert(song) }
+                    database.song(id).first()?.let { fallbackSongs.add(it) }
+                }
+            }
+            if (fallbackSongs.size >= 8) break
+        }
+        if (fallbackSongs.isNotEmpty()) quickPicks.value = fallbackSongs
     }
 
     private suspend fun getCommunityPlaylists() {
