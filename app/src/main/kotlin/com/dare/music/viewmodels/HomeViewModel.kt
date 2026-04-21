@@ -357,11 +357,17 @@ class HomeViewModel @Inject constructor(
         val endpoint = YouTube.next(WatchEndpoint(videoId = seedVideoId)).getOrNull()?.relatedEndpoint
         if (endpoint != null) {
             YouTube.related(endpoint).onSuccess { page ->
-                val songs = mutableListOf<Song>()
+                // Insert all songs into DB first
+                val songIds = mutableListOf<String>()
                 page.songs.take(20).forEach { ytSong ->
                     val song = ytSong.toMediaMetadata()
                     database.transaction { insert(song) }
-                    database.song(ytSong.id).first()?.let { localSong ->
+                    songIds.add(ytSong.id)
+                }
+                // Now read them back after all inserts committed
+                val songs = mutableListOf<Song>()
+                songIds.forEach { id ->
+                    database.song(id).first()?.let { localSong ->
                         if (!hideVideoSongs || !localSong.song.isVideo) {
                             songs.add(localSong)
                         }
