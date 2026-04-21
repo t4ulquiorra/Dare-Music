@@ -1,7 +1,7 @@
 /**
  * Dare Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
- *
+ * 
  * Optimized for minimal recomposition during navigation
  */
 
@@ -169,8 +169,6 @@ inline fun ListItem(
             modifier // default
                 .height(ListItemHeight)
                 .padding(horizontal = 8.dp)
-                .clip(RoundedCornerShape(8.dp))
-                .background(color = androidx.compose.ui.graphics.Color.White.copy(alpha = 0.05f))
         }
     ) {
         Box(
@@ -1288,7 +1286,7 @@ fun ItemThumbnail(
     thumbnailRatio: Float = 1f
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
-
+    
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -1370,7 +1368,7 @@ fun LocalThumbnail(
     thumbnailRatio: Float = 1f
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
-
+    
     Box(
         contentAlignment = Alignment.Center,
         modifier = modifier
@@ -1476,7 +1474,7 @@ fun PlaylistThumbnail(
     cacheKey: String? = null
 ) {
     val cropAlbumArt by rememberPreference(CropAlbumArtKey, false)
-
+    
     when (thumbnails.size) {
         0 -> Box(
             contentAlignment = Alignment.Center,
