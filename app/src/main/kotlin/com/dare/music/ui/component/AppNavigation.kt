@@ -12,6 +12,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -156,10 +157,10 @@ fun AppNavigationBar(
     NavigationBar(
         modifier = modifier
             .padding(horizontal = 12.dp, vertical = 2.dp)
-            .clip(RoundedCornerShape(18.dp))
-            .height(56.dp),
+            .clip(RoundedCornerShape(18.dp)),
         containerColor = containerColor,
-        contentColor = contentColor
+        contentColor = contentColor,
+        windowInsets = WindowInsets(0),
     ) {
         navigationItems.forEach { screen ->
             val isSelected = remember(currentRoute, screen.route) {
