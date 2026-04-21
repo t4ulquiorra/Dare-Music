@@ -21,7 +21,7 @@ val NavigationBarHeight = 60.dp
 val SlimNavBarHeight = 64.dp
 val MiniPlayerHeight = 64.dp
 val MinMiniPlayerHeight = 16.dp
-val MiniPlayerBottomSpacing = 8.dp // Space between MiniPlayer and NavigationBar
+val MiniPlayerBottomSpacing = 16.dp // Space between MiniPlayer and NavigationBar
 val QueuePeekHeight = 64.dp
 val AppBarHeight = 64.dp
 

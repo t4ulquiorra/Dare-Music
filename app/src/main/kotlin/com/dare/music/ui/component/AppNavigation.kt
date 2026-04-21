@@ -165,7 +165,11 @@ fun AppNavigationBar(
             modifier
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.85f)),
+                        colorStops = arrayOf(
+                            0.0f to Color.Transparent,
+                            0.4f to Color.Black.copy(alpha = 0.6f),
+                            1.0f to Color.Black.copy(alpha = 0.95f),
+                        ),
                     )
                 )
         }
