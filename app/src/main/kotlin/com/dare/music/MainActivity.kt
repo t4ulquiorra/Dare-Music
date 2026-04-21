@@ -1072,6 +1072,7 @@ class MainActivity : ComponentActivity() {
                                             onItemClick = onNavItemClick,
                                             pureBlack = pureBlack,
                                             slimNav = slimNav,
+                                            isLandscape = isLandscape,
                                             onSearchLongClick = onSearchLongClick,
                                             modifier =
                                                 Modifier

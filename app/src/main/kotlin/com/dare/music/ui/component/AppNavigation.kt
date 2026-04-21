@@ -147,17 +147,22 @@ fun AppNavigationBar(
     modifier: Modifier = Modifier,
     pureBlack: Boolean = false,
     slimNav: Boolean = false,
+    isLandscape: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (pureBlack) Color(0xFF1A1A1A) else MaterialTheme.colorScheme.surfaceContainer
+    val containerColor = if (isLandscape) Color(0xFF1A1A1A) else Color.Transparent
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
     NavigationBar(
-        modifier = modifier
-            .padding(horizontal = 12.dp, vertical = 2.dp)
-            .clip(RoundedCornerShape(18.dp)),
+        modifier = if (isLandscape) {
+            modifier
+                .padding(horizontal = 12.dp, vertical = 2.dp)
+                .clip(RoundedCornerShape(18.dp))
+        } else {
+            modifier
+        },
         containerColor = containerColor,
         contentColor = contentColor,
         windowInsets = WindowInsets(0),
