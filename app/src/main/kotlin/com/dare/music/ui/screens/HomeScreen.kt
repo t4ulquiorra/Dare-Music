@@ -176,6 +176,8 @@ sealed class HomeSection(
 
     data object QuickPicks : HomeSection("quick_picks", 90)
     data object RelatedAlbums : HomeSection("related_albums", 80)
+    data object SimilarArtists : HomeSection("similar_artists", 75)
+    data object RecommendedPlaylists : HomeSection("recommended_playlists", 70)
 
     data object DailyDiscover : HomeSection("daily_discover", 80)
 
@@ -646,6 +648,8 @@ fun HomeScreen(
 
     val quickPicks by viewModel.quickPicks.collectAsState()
     val relatedAlbums by viewModel.relatedAlbums.collectAsState()
+    val similarArtists by viewModel.similarArtists.collectAsState()
+    val recommendedPlaylists by viewModel.recommendedPlaylists.collectAsState()
     val forgottenFavorites by viewModel.forgottenFavorites.collectAsState()
     val keepListening by viewModel.keepListening.collectAsState()
     val similarRecommendations by viewModel.similarRecommendations.collectAsState()
@@ -1017,6 +1021,8 @@ fun HomeScreen(
 
             if (!chipActive && quickPicks?.isNotEmpty() == true) list.add(HomeSection.QuickPicks)
             if (!chipActive && relatedAlbums.isNotEmpty()) list.add(HomeSection.RelatedAlbums)
+            if (!chipActive && similarArtists.isNotEmpty()) list.add(HomeSection.SimilarArtists)
+            if (!chipActive && recommendedPlaylists.isNotEmpty()) list.add(HomeSection.RecommendedPlaylists)
 
 
 
@@ -1904,6 +1910,48 @@ fun HomeScreen(
                                     ) {
                                         items(albums) { album ->
                                             ytGridItem(album)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        HomeSection.SimilarArtists -> {
+                            similarArtists.takeIf { it.isNotEmpty() }?.let { artists ->
+                                item(key = "similar_artists_title") {
+                                    Text(
+                                        text = "Similar artists",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
+                                }
+                                item(key = "similar_artists_list") {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        items(artists) { artist ->
+                                            ytGridItem(artist)
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                        HomeSection.RecommendedPlaylists -> {
+                            recommendedPlaylists.takeIf { it.isNotEmpty() }?.let { playlists ->
+                                item(key = "recommended_playlists_title") {
+                                    Text(
+                                        text = "Playlists you might like",
+                                        style = MaterialTheme.typography.titleLarge,
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                    )
+                                }
+                                item(key = "recommended_playlists_list") {
+                                    LazyRow(
+                                        contentPadding = PaddingValues(horizontal = 16.dp),
+                                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                                    ) {
+                                        items(playlists) { playlist ->
+                                            ytGridItem(playlist)
                                         }
                                     }
                                 }

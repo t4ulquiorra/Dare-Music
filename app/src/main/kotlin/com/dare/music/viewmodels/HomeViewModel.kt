@@ -96,6 +96,8 @@ class HomeViewModel @Inject constructor(
     val keepListening = MutableStateFlow<List<LocalItem>?>(null)
     val similarRecommendations = MutableStateFlow<List<SimilarRecommendation>?>(null)
     val relatedAlbums = MutableStateFlow<List<com.dare.innertube.models.AlbumItem>>(emptyList())
+    val similarArtists = MutableStateFlow<List<com.dare.innertube.models.ArtistItem>>(emptyList())
+    val recommendedPlaylists = MutableStateFlow<List<com.dare.innertube.models.PlaylistItem>>(emptyList())
     val accountPlaylists = MutableStateFlow<List<PlaylistItem>?>(null)
     val homePage = MutableStateFlow<HomePage?>(null)
     val explorePage = MutableStateFlow<ExplorePage?>(null)
@@ -592,6 +594,18 @@ class HomeViewModel @Inject constructor(
             relatedAlbums.value = allRecommendations
                 .flatMap { it.items }
                 .filterIsInstance<com.dare.innertube.models.AlbumItem>()
+                .distinctBy { it.id }
+                .take(10)
+
+            similarArtists.value = allRecommendations
+                .flatMap { it.items }
+                .filterIsInstance<com.dare.innertube.models.ArtistItem>()
+                .distinctBy { it.id }
+                .take(10)
+
+            recommendedPlaylists.value = allRecommendations
+                .flatMap { it.items }
+                .filterIsInstance<com.dare.innertube.models.PlaylistItem>()
                 .distinctBy { it.id }
                 .take(10)
 
