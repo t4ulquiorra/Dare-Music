@@ -324,37 +324,14 @@ class HomeViewModel @Inject constructor(
         dailyDiscover.value = items.toList().distinctBy { it.recommendation.id }.shuffled()
     }
 
-    private val curatedSeedIds = listOf(
-        "u6lihZAcy4s", // Save Your Tears - The Weeknd
-        "-rey3m8SWQI", // Be the One - Dua Lipa
-        "dqRZDebPIGs", // In Your Eyes - The Weeknd
-        "1G4isv_Fylg",  // Paradise - Coldplay
-        "dvgZkm1xWPE", // Viva La Vida - Coldplay
-        "FM7MFYoylVs", // Something Just Like This - Chainsmokers & Coldplay
-        "YykjpeuMNEk", // Hymn for the Weekend - Coldplay
-        "VPRjCeoBqrI", // A Sky Full of Stars - Coldplay
-        "fKopy74weus", // Thunder - Imagine Dragons
-        "7wtfhZwyrcc", // Believer - Imagine Dragons
-        "qFLhGq0060w", // I Feel It Coming - The Weeknd ft. Daft Punk
-        "wXhTHyIgQ_U", // Circles - Post Malone
-        "XXYlFuWEuKI", // Save Your Tears Remix - The Weeknd & Ariana Grande
-        "34Na4j8AVgA", // Starboy - The Weeknd ft. Daft Punk
-        "E07s5ZYygMg", // Watermelon Sugar - Harry Styles
-        "JRfuAukYTKg", // Titanium - David Guetta ft. Sia
-        "JGwWNGJdvx8", // Shape of You - Ed Sheeran
-        "IcrbM1l_BoI", // Wake Me Up - Avicii
-        "gOsM-DYAEhY", // Whatever It Takes - Imagine Dragons
-        "47dtFZ8CFo8"  // Safe and Sound - Capital Cities
-    )
-
     private suspend fun getQuickPicks() {
         val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
-
         when (quickPicksEnum.first()) {
             QuickPicks.QUICK_PICKS -> {
                 val relatedSongs = database.quickPicks().first().filterVideoSongs(hideVideoSongs)
                 val forgotten = database.forgottenFavorites().first().filterVideoSongs(hideVideoSongs).take(8)
 
+                // Get similar songs from YouTube based on recent listening
                 val recentSong = database.events().first().firstOrNull()?.song
                 val ytSimilarSongs = mutableListOf<Song>()
 
@@ -362,6 +339,7 @@ class HomeViewModel @Inject constructor(
                     val endpoint = YouTube.next(WatchEndpoint(videoId = recentSong.id)).getOrNull()?.relatedEndpoint
                     if (endpoint != null) {
                         YouTube.related(endpoint).onSuccess { page ->
+                            // Convert YouTube songs to local Song format if they exist in database
                             page.songs.take(10).forEach { ytSong ->
                                 database.song(ytSong.id).first()?.let { localSong ->
                                     if (!hideVideoSongs || !localSong.song.isVideo) {
@@ -373,31 +351,13 @@ class HomeViewModel @Inject constructor(
                     }
                 }
 
+                // Combine all sources and remove duplicates
                 val combined = (relatedSongs + forgotten + ytSimilarSongs)
                     .distinctBy { it.id }
                     .shuffled()
                     .take(20)
 
-                if (combined.isNotEmpty()) {
-                    quickPicks.value = combined
-                } else if (relatedSongs.isNotEmpty()) {
-                    quickPicks.value = relatedSongs.shuffled().take(20)
-                } else {
-                    // Fresh install fallback — seed video
-                    val seedEndpoint = YouTube.next(WatchEndpoint(videoId = "J7p4bzqLvCw")).getOrNull()?.relatedEndpoint
-                    if (seedEndpoint != null) {
-                        YouTube.related(seedEndpoint).onSuccess { page ->
-                            val seedSongs = mutableListOf<Song>()
-                            page.songs.take(20).forEach { ytSong ->
-                                val song = ytSong.toMediaMetadata()
-                                database.transaction { insert(song) }
-                                kotlinx.coroutines.delay(300)
-                                database.song(ytSong.id).first()?.let { seedSongs.add(it) }
-                            }
-                            if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
-                        }
-                    }
-                }
+                quickPicks.value = combined.ifEmpty { relatedSongs.shuffled().take(20) }
             }
             QuickPicks.LAST_LISTEN -> {
                 val song = database.events().first().firstOrNull()?.song
@@ -408,7 +368,7 @@ class HomeViewModel @Inject constructor(
         }
     }
 
-        private suspend fun getCommunityPlaylists() {
+    private suspend fun getCommunityPlaylists() {
         val fromTimeStamp = System.currentTimeMillis() - 86400000L * 7 * 4
         val artistSeeds = database.mostPlayedArtists(fromTimeStamp, limit = 10).first()
             .filter { it.artist.isYouTubeArtist }
@@ -618,19 +578,16 @@ class HomeViewModel @Inject constructor(
                 .filterIsInstance<com.dare.innertube.models.AlbumItem>()
                 .distinctBy { it.id }
                 .take(10)
-
             similarArtists.value = allRecommendations
                 .flatMap { it.items }
                 .filterIsInstance<com.dare.innertube.models.ArtistItem>()
                 .distinctBy { it.id }
                 .take(10)
-
             recommendedPlaylists.value = allRecommendations
                 .flatMap { it.items }
                 .filterIsInstance<com.dare.innertube.models.PlaylistItem>()
                 .distinctBy { it.id }
                 .take(10)
-
             allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() +
                     homePage.value?.sections?.flatMap { it.items }.orEmpty()
         }

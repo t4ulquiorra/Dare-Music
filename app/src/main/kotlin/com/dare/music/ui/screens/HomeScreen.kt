@@ -26,8 +26,9 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
-import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.offset
+import com.dare.music.ui.component.AccountSettingsDialog
+import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.systemBars
 import androidx.compose.foundation.layout.width
@@ -137,7 +138,6 @@ import com.dare.music.ui.component.ArtistGridItem
 import com.dare.music.ui.component.ChipsRow
 import com.dare.music.ui.component.HideOnScrollFAB
 import com.dare.music.ui.component.LocalBottomSheetPageState
-import com.dare.music.ui.component.AccountSettingsDialog
 import com.dare.music.ui.component.LocalMenuState
 import com.dare.music.ui.component.NavigationTitle
 import com.dare.music.ui.component.RandomizeGridItem
@@ -635,7 +635,6 @@ fun HomeScreen(
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
     val menuState = LocalMenuState.current
-    var showAccountDialog by remember { mutableStateOf(false) }
     val bottomSheetPageState = LocalBottomSheetPageState.current
     val database = LocalDatabase.current
     val playerConnection = LocalPlayerConnection.current ?: return
@@ -643,6 +642,10 @@ fun HomeScreen(
     val listenTogetherManager = LocalListenTogetherManager.current
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
 
+    var showAccountDialog by remember { mutableStateOf(false) }
+    if (showAccountDialog) {
+        AccountSettingsDialog(onDismiss = { showAccountDialog = false })
+    }
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
 
@@ -1157,7 +1160,7 @@ fun HomeScreen(
                     Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 4.dp, top = 0.dp, bottom = 24.dp).offset(y = (-16).dp).offset(y = (-16).dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
                         horizontalArrangement = Arrangement.SpaceBetween,
                         verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
@@ -1165,20 +1168,38 @@ fun HomeScreen(
                             text = "Quick picks",
                             style = MaterialTheme.typography.displaySmall,
                         )
-                        Row {
-                            IconButton(onClick = { showAccountDialog = true }) {
-                                Icon(
-                                    painter = painterResource(R.drawable.account),
-                                    contentDescription = null,
-                                )
-                            }
+                        IconButton(onClick = { showAccountDialog = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.account),
+                                contentDescription = null,
+                            )
                         }
                     }
                 }
 
 
                 if (isLoading && homePage?.chips.isNullOrEmpty()) {
-
+                    item(key = "chips_shimmer") {
+                        ShimmerHost(showGradient = false) {
+                            LazyRow(
+                                contentPadding =
+                                    WindowInsets.systemBars
+                                        .only(WindowInsetsSides.Horizontal)
+                                        .asPaddingValues(),
+                                horizontalArrangement = Arrangement.spacedBy(8.dp),
+                                modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            ) {
+                                items(5) {
+                                    TextPlaceholder(
+                                        height = 30.dp,
+                                        shape = RoundedCornerShape(16.dp),
+                                        modifier = Modifier.width(72.dp),
+                                    )
+                                }
+                            }
+                        }
+                    }
+                }
 
                 // Show podcast sections FIRST when podcast chip is selected (fixed at top)
                 if (selectedChip?.title?.contains("Podcast", ignoreCase = true) == true) {
@@ -1752,6 +1773,24 @@ fun HomeScreen(
                                                 isActive = song!!.id == mediaMetadata?.id,
                                                 isPlaying = isPlaying,
                                                 isSwipeable = false,
+                                                trailingContent = {
+                                                    IconButton(
+                                                        onClick = {
+                                                            menuState.show {
+                                                                SongMenu(
+                                                                    originalSong = song!!,
+                                                                    navController = navController,
+                                                                    onDismiss = menuState::dismiss,
+                                                                )
+                                                            }
+                                                        },
+                                                    ) {
+                                                        Icon(
+                                                            painter = painterResource(R.drawable.more_vert),
+                                                            contentDescription = null,
+                                                        )
+                                                    }
+                                                },
                                                 modifier =
                                                     Modifier
                                                         .width(horizontalLazyGridItemWidth)
@@ -1908,9 +1947,7 @@ fun HomeScreen(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        items(albums) { album ->
-                                            ytGridItem(album)
-                                        }
+                                        items(albums) { album -> ytGridItem(album) }
                                     }
                                 }
                             }
@@ -1929,9 +1966,7 @@ fun HomeScreen(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        items(artists) { artist ->
-                                            ytGridItem(artist)
-                                        }
+                                        items(artists) { artist -> ytGridItem(artist) }
                                     }
                                 }
                             }
@@ -1950,9 +1985,7 @@ fun HomeScreen(
                                         contentPadding = PaddingValues(horizontal = 16.dp),
                                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                                     ) {
-                                        items(playlists) { playlist ->
-                                            ytGridItem(playlist)
-                                        }
+                                        items(playlists) { playlist -> ytGridItem(playlist) }
                                     }
                                 }
                             }
@@ -2494,22 +2527,139 @@ fun HomeScreen(
                                 }
                             }
                         }
-
-                        else -> {}
                     }
+                }
+
+                // Only show shimmer during initial loading, not for pagination
+                if (isLoading && homePage?.sections.isNullOrEmpty()) {
+                    item(key = "loading_shimmer") {
+                        ShimmerHost(
+                            modifier = Modifier.animateItem(),
+                        ) {
+                            repeat(2) {
+                                TextPlaceholder(
+                                    height = 36.dp,
+                                    modifier =
+                                        Modifier
+                                            .padding(12.dp)
+                                            .width(250.dp),
+                                )
+                                LazyRow(
+                                    contentPadding =
+                                        WindowInsets.systemBars
+                                            .only(WindowInsetsSides.Horizontal)
+                                            .asPaddingValues(),
+                                ) {
+                                    items(4) {
+                                        GridItemPlaceHolder()
+                                    }
+                                }
+                            }
+
+                            TextPlaceholder(
+                                height = 36.dp,
+                                modifier =
+                                    Modifier
+                                        .padding(vertical = 12.dp, horizontal = 12.dp)
+                                        .width(250.dp),
+                            )
+                            repeat(4) {
+                                Row {
+                                    repeat(2) {
+                                        TextPlaceholder(
+                                            height = MoodAndGenresButtonHeight,
+                                            shape = RoundedCornerShape(6.dp),
+                                            modifier =
+                                                Modifier
+                                                    .padding(horizontal = 12.dp)
+                                                    .width(200.dp),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
             }
+
+            HideOnScrollFAB(
+                visible = allLocalItems.isNotEmpty() || allYtItems.isNotEmpty(),
+                lazyListState = lazylistState,
+                icon = R.drawable.shuffle,
+                onClick = {
+                    if (!isListenTogetherGuest) {
+                        val local =
+                            when {
+                                allLocalItems.isNotEmpty() && allYtItems.isNotEmpty() -> Random.nextFloat() < 0.5
+                                allLocalItems.isNotEmpty() -> true
+                                else -> false
+                            }
+                        scope.launch(Dispatchers.Main) {
+                            if (local) {
+                                when (val luckyItem = allLocalItems.random()) {
+                                    is Song -> {
+                                        playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
+                                    }
+
+                                    is Album -> {
+                                        val albumWithSongs =
+                                            withContext(Dispatchers.IO) {
+                                                database.albumWithSongs(luckyItem.id).first()
+                                            }
+                                        albumWithSongs?.let {
+                                            playerConnection.playQueue(LocalAlbumRadio(it))
+                                        }
+                                    }
+
+                                    is Artist -> {}
+
+                                    is Playlist -> {}
+                                }
+                            } else {
+                                when (val luckyItem = allYtItems.random()) {
+                                    is SongItem -> {
+                                        playerConnection.playQueue(YouTubeQueue.radio(luckyItem.toMediaMetadata()))
+                                    }
+
+                                    is AlbumItem -> {
+                                        playerConnection.playQueue(YouTubeAlbumRadio(luckyItem.playlistId))
+                                    }
+
+                                    is ArtistItem -> {
+                                        luckyItem.radioEndpoint?.let {
+                                            playerConnection.playQueue(YouTubeQueue(it))
+                                        }
+                                    }
+
+                                    is PlaylistItem -> {
+                                        luckyItem.playEndpoint?.let {
+                                            playerConnection.playQueue(YouTubeQueue(it))
+                                        }
+                                    }
+
+                                    is PodcastItem -> {
+                                        luckyItem.playEndpoint?.let {
+                                            playerConnection.playQueue(YouTubeQueue(it))
+                                        }
+                                    }
+
+                                    is EpisodeItem -> {
+                                        playerConnection.playQueue(
+                                            ListQueue(
+                                                title = luckyItem.title,
+                                                items = listOf(luckyItem.toMediaMetadata().toMediaItem()),
+                                            ),
+                                        )
+                                    }
+                                }
+                            }
+                        }
+                    }
+                },
+                onRecognitionClick = {
+                    navController.navigate("recognition")
+                },
+            )
         }
-
-            }
-
-        }
-    }
-
-    if (showAccountDialog) {
-        AccountSettingsDialog(
-            navController = navController,
-            onDismiss = { showAccountDialog = false },
-            latestVersionName = "",
-        )
     }
 }
