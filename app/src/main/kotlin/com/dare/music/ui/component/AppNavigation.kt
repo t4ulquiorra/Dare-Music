@@ -154,8 +154,9 @@ fun AppNavigationBar(
 
     NavigationBar(
         modifier = modifier
-            .padding(horizontal = 12.dp, vertical = 8.dp)
-            .clip(RoundedCornerShape(24.dp)),
+            .padding(horizontal = 12.dp, vertical = 4.dp)
+            .clip(RoundedCornerShape(20.dp))
+            .height(64.dp),
         containerColor = containerColor,
         contentColor = contentColor
     ) {
