@@ -350,56 +350,65 @@ class HomeViewModel @Inject constructor(
     private suspend fun getQuickPicks() {
         val hideVideoSongs = context.dataStore.get(HideVideoSongsKey, false)
 
-        // Use recent song as seed if available, otherwise pick a random curated seed
-        val recentSong = database.events().first().firstOrNull()?.song
-        val seedVideoId = recentSong?.id ?: curatedSeedIds.random()
+        when (quickPicksEnum.first()) {
+            QuickPicks.QUICK_PICKS -> {
+                val relatedSongs = database.quickPicks().first().filterVideoSongs(hideVideoSongs)
+                val forgotten = database.forgottenFavorites().first().filterVideoSongs(hideVideoSongs).take(8)
 
-        val endpoint = YouTube.next(WatchEndpoint(videoId = seedVideoId)).getOrNull()?.relatedEndpoint
-        if (endpoint != null) {
-            YouTube.related(endpoint).onSuccess { page ->
-                // Insert all songs into DB first
-                val songIds = mutableListOf<String>()
-                page.songs.take(20).forEach { ytSong ->
-                    val song = ytSong.toMediaMetadata()
-                    database.transaction { insert(song) }
-                    songIds.add(ytSong.id)
-                }
-                // Wait for DB to commit all transactions
-                kotlinx.coroutines.delay(300)
-                // Now read them back after all inserts committed
-                val songs = mutableListOf<Song>()
-                songIds.forEach { id ->
-                    database.song(id).first()?.let { localSong ->
-                        if (!hideVideoSongs || !localSong.song.isVideo) {
-                            songs.add(localSong)
+                val recentSong = database.events().first().firstOrNull()?.song
+                val ytSimilarSongs = mutableListOf<Song>()
+
+                if (recentSong != null) {
+                    val endpoint = YouTube.next(WatchEndpoint(videoId = recentSong.id)).getOrNull()?.relatedEndpoint
+                    if (endpoint != null) {
+                        YouTube.related(endpoint).onSuccess { page ->
+                            page.songs.take(10).forEach { ytSong ->
+                                database.song(ytSong.id).first()?.let { localSong ->
+                                    if (!hideVideoSongs || !localSong.song.isVideo) {
+                                        ytSimilarSongs.add(localSong)
+                                    }
+                                }
+                            }
                         }
                     }
                 }
-                if (songs.isNotEmpty()) {
-                    quickPicks.value = songs
-                    return
-                }
-            }
-        }
 
-        // Fallback: insert and show curated songs directly
-        val fallbackSongs = mutableListOf<Song>()
-        for (id in curatedSeedIds.shuffled()) {
-            YouTube.next(WatchEndpoint(videoId = id)).getOrNull()?.let { nextResult ->
-                val ytSong = nextResult.items.firstOrNull()
-                if (ytSong != null) {
-                    val song = ytSong.toMediaMetadata()
-                    database.transaction { insert(song) }
-                    kotlinx.coroutines.delay(200)
-                    database.song(id).first()?.let { fallbackSongs.add(it) }
+                val combined = (relatedSongs + forgotten + ytSimilarSongs)
+                    .distinctBy { it.id }
+                    .shuffled()
+                    .take(20)
+
+                if (combined.isNotEmpty()) {
+                    quickPicks.value = combined
+                } else if (relatedSongs.isNotEmpty()) {
+                    quickPicks.value = relatedSongs.shuffled().take(20)
+                } else {
+                    // Fresh install fallback — seed video
+                    val seedEndpoint = YouTube.next(WatchEndpoint(videoId = "J7p4bzqLvCw")).getOrNull()?.relatedEndpoint
+                    if (seedEndpoint != null) {
+                        YouTube.related(seedEndpoint).onSuccess { page ->
+                            val seedSongs = mutableListOf<Song>()
+                            page.songs.take(20).forEach { ytSong ->
+                                val song = ytSong.toMediaMetadata()
+                                database.transaction { insert(song) }
+                                kotlinx.coroutines.delay(300)
+                                database.song(ytSong.id).first()?.let { seedSongs.add(it) }
+                            }
+                            if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
+                        }
+                    }
                 }
             }
-            if (fallbackSongs.size >= 8) break
+            QuickPicks.LAST_LISTEN -> {
+                val song = database.events().first().firstOrNull()?.song
+                if (song != null && database.hasRelatedSongs(song.id)) {
+                    quickPicks.value = database.getRelatedSongs(song.id).first().filterVideoSongs(hideVideoSongs).shuffled().take(20)
+                }
+            }
         }
-        if (fallbackSongs.isNotEmpty()) quickPicks.value = fallbackSongs
     }
 
-    private suspend fun getCommunityPlaylists() {
+        private suspend fun getCommunityPlaylists() {
         val fromTimeStamp = System.currentTimeMillis() - 86400000L * 7 * 4
         val artistSeeds = database.mostPlayedArtists(fromTimeStamp, limit = 10).first()
             .filter { it.artist.isYouTubeArtist }
