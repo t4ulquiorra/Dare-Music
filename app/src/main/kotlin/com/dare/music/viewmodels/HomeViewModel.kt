@@ -335,16 +335,16 @@ class HomeViewModel @Inject constructor(
                 val recentSong = database.events().first().firstOrNull()?.song
                 val ytSimilarSongs = mutableListOf<Song>()
 
-                if (recentSong != null) {
-                    val endpoint = YouTube.next(WatchEndpoint(videoId = recentSong.id)).getOrNull()?.relatedEndpoint
-                    if (endpoint != null) {
-                        YouTube.related(endpoint).onSuccess { page ->
-                            // Convert YouTube songs to local Song format if they exist in database
-                            page.songs.take(10).forEach { ytSong ->
-                                database.song(ytSong.id).first()?.let { localSong ->
-                                    if (!hideVideoSongs || !localSong.song.isVideo) {
-                                        ytSimilarSongs.add(localSong)
-                                    }
+                val seedVideoId = recentSong?.id ?: "J7p4bzqLvCw"
+                val endpoint = YouTube.next(WatchEndpoint(videoId = seedVideoId)).getOrNull()?.relatedEndpoint
+                if (endpoint != null) {
+                    YouTube.related(endpoint).onSuccess { page ->
+                        page.songs.take(20).forEach { ytSong ->
+                            val song = ytSong.toMediaMetadata()
+                            database.transaction { insert(song) }
+                            database.song(ytSong.id).first()?.let { localSong ->
+                                if (!hideVideoSongs || !localSong.song.isVideo) {
+                                    ytSimilarSongs.add(localSong)
                                 }
                             }
                         }
