@@ -357,7 +357,26 @@ class HomeViewModel @Inject constructor(
                     .shuffled()
                     .take(20)
 
-                quickPicks.value = combined.ifEmpty { relatedSongs.shuffled().take(20) }
+                if (combined.isNotEmpty()) {
+                    quickPicks.value = combined
+                } else if (relatedSongs.isNotEmpty()) {
+                    quickPicks.value = relatedSongs.shuffled().take(20)
+                } else {
+                    // No local data — fetch from YouTube seed
+                    val seedId = database.events().first().firstOrNull()?.song?.id ?: "J7p4bzqLvCw"
+                    val seedEndpoint = YouTube.next(WatchEndpoint(videoId = seedId)).getOrNull()?.relatedEndpoint
+                    if (seedEndpoint != null) {
+                        YouTube.related(seedEndpoint).onSuccess { page ->
+                            val seedSongs = mutableListOf<Song>()
+                            page.songs.take(20).forEach { ytSong ->
+                                val song = ytSong.toMediaMetadata()
+                                database.transaction { insert(song) }
+                                database.song(ytSong.id).first()?.let { seedSongs.add(it) }
+                            }
+                            if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
+                        }
+                    }
+                }
             }
             QuickPicks.LAST_LISTEN -> {
                 val song = database.events().first().firstOrNull()?.song
