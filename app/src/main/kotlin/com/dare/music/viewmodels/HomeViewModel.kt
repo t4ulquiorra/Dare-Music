@@ -377,8 +377,8 @@ class HomeViewModel @Inject constructor(
         // Fallback: insert and show curated songs directly
         val fallbackSongs = mutableListOf<Song>()
         for (id in curatedSeedIds.shuffled()) {
-            YouTube.next(WatchEndpoint(videoId = id)).getOrNull()?.let { nextPage ->
-                val ytSong = nextPage.currentPage?.songs?.firstOrNull()
+            YouTube.next(WatchEndpoint(videoId = id)).getOrNull()?.let { nextResult ->
+                val ytSong = nextResult.items.firstOrNull()
                 if (ytSong != null) {
                     val song = ytSong.toMediaMetadata()
                     database.transaction { insert(song) }
