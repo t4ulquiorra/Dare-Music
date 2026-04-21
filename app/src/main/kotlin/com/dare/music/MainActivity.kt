@@ -695,10 +695,8 @@ class MainActivity : ComponentActivity() {
                     }
 
                 val shouldShowNavigationBar =
-                    remember(currentRoute, navigationItemRoutes) {
-                        currentRoute == null ||
-                            navigationItemRoutes.contains(currentRoute) ||
-                            currentRoute!!.startsWith("search/")
+                    remember(currentRoute) {
+                        currentRoute != "wrapped"
                     }
 
                 val isLandscape = configuration.containerDpSize.width > configuration.containerDpSize.height
