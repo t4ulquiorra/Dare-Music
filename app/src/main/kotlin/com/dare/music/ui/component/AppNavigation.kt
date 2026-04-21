@@ -12,7 +12,10 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.NavigationBar
 import androidx.compose.material3.NavigationBarItem
+import androidx.compose.foundation.background
+import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.WindowInsets
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -150,18 +153,30 @@ fun AppNavigationBar(
     isLandscape: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (isLandscape) Color(0xFF1A1A1A) else Color(0xFF1A1A1A).copy(alpha = 0.85f)
+    val containerColor = if (isLandscape) Color(0xFF1A1A1A) else Color.Black.copy(alpha = 0.18f)
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
 
-    NavigationBar(
+    Box(
         modifier = if (isLandscape) {
             modifier
+        } else {
+            modifier
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.18f)),
+                    )
+                )
+        }
+    ) {
+    NavigationBar(
+        modifier = if (isLandscape) {
+            Modifier
                 .padding(horizontal = 12.dp, vertical = 2.dp)
                 .clip(RoundedCornerShape(18.dp))
         } else {
-            modifier
+            Modifier
         },
         containerColor = containerColor,
         contentColor = contentColor,
@@ -231,5 +246,6 @@ fun AppNavigationBar(
                 } else null
             )
         }
+    }
     }
 }
