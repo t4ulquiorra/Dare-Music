@@ -364,6 +364,8 @@ class HomeViewModel @Inject constructor(
                     database.transaction { insert(song) }
                     songIds.add(ytSong.id)
                 }
+                // Wait for DB to commit all transactions
+                kotlinx.coroutines.delay(300)
                 // Now read them back after all inserts committed
                 val songs = mutableListOf<Song>()
                 songIds.forEach { id ->
@@ -388,6 +390,7 @@ class HomeViewModel @Inject constructor(
                 if (ytSong != null) {
                     val song = ytSong.toMediaMetadata()
                     database.transaction { insert(song) }
+                    kotlinx.coroutines.delay(200)
                     database.song(id).first()?.let { fallbackSongs.add(it) }
                 }
             }
