@@ -644,7 +644,7 @@ fun HomeScreen(
 
     var showAccountDialog by remember { mutableStateOf(false) }
     if (showAccountDialog) {
-        AccountSettingsDialog(onDismiss = { showAccountDialog = false })
+        AccountSettingsDialog(navController = navController, onDismiss = { showAccountDialog = false }, latestVersionName = com.dare.music.BuildConfig.VERSION_NAME)
     }
     val isPlaying by playerConnection.isEffectivelyPlaying.collectAsState()
     val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
