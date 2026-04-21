@@ -1,3 +1,4 @@
+
 /**
  * Dare Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
@@ -153,7 +154,7 @@ fun AppNavigationBar(
     isLandscape: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (isLandscape) Color(0xFF1A1A1A) else Color.Black.copy(alpha = 0.85f)
+    val containerColor = if (isLandscape) MaterialTheme.colorScheme.surfaceContainer else Color.Black.copy(alpha = 0.85f)
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
@@ -253,3 +254,4 @@ fun AppNavigationBar(
     }
     }
 }
+
