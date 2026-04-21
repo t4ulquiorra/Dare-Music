@@ -1077,7 +1077,6 @@ class MainActivity : ComponentActivity() {
                                             modifier =
                                                 Modifier
                                                     .align(Alignment.BottomCenter)
-                                                    .padding(bottom = bottomInset + 8.dp)
                                                     .height(bottomInset + navPadding)
                                                     .graphicsLayer {
                                                         val navBarHeightPx = navigationBarHeight.toPx()

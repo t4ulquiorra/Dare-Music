@@ -150,7 +150,7 @@ fun AppNavigationBar(
     isLandscape: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (isLandscape) Color(0xFF1A1A1A) else Color.Transparent
+    val containerColor = if (isLandscape) Color(0xFF1A1A1A) else Color(0xFF1A1A1A).copy(alpha = 0.85f)
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
