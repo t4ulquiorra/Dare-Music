@@ -374,6 +374,9 @@ class HomeViewModel @Inject constructor(
                                 database.song(ytSong.id).first()?.let { seedSongs.add(it) }
                             }
                             if (seedSongs.isNotEmpty()) quickPicks.value = seedSongs
+                            if (page.albums.isNotEmpty()) relatedAlbums.value = page.albums.take(10)
+                            if (page.artists.isNotEmpty()) similarArtists.value = page.artists.take(10)
+                            if (page.playlists.isNotEmpty()) recommendedPlaylists.value = page.playlists.take(10)
                         }
                     }
                 }
