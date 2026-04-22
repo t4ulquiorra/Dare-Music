@@ -32,6 +32,7 @@ import androidx.compose.runtime.Stable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberUpdatedState
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -160,6 +161,7 @@ fun AppNavigationBar(
     val viewConfiguration = LocalViewConfiguration.current
 
     Box(
+        contentAlignment = Alignment.BottomCenter,
         modifier = if (isLandscape) {
             modifier
         } else {
