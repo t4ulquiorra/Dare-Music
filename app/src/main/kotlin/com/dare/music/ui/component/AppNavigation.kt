@@ -154,7 +154,7 @@ fun AppNavigationBar(
     isLandscape: Boolean = false,
     onSearchLongClick: (() -> Unit)? = null
 ) {
-    val containerColor = if (isLandscape) MaterialTheme.colorScheme.surfaceContainer else Color.Black.copy(alpha = 0.85f)
+    val containerColor = if (isLandscape) MaterialTheme.colorScheme.surfaceContainer else Color.Transparent
     val contentColor = if (pureBlack) Color.White else MaterialTheme.colorScheme.onSurfaceVariant
     val haptics = LocalHapticFeedback.current
     val viewConfiguration = LocalViewConfiguration.current
@@ -168,8 +168,8 @@ fun AppNavigationBar(
                     Brush.verticalGradient(
                         colorStops = arrayOf(
                             0.0f to Color.Transparent,
-                            0.4f to Color.Black.copy(alpha = 0.6f),
-                            1.0f to Color.Black.copy(alpha = 0.95f),
+                            0.4f to MaterialTheme.colorScheme.surface.copy(alpha = 0.6f),
+                            1.0f to MaterialTheme.colorScheme.surface.copy(alpha = 0.95f),
                         ),
                     )
                 )
@@ -240,15 +240,7 @@ fun AppNavigationBar(
                         contentDescription = stringResource(screen.titleId)
                     )
                 },
-                label = if (!slimNav) {
-                    {
-                        Text(
-                            text = stringResource(screen.titleId),
-                            maxLines = 1,
-                            overflow = TextOverflow.Ellipsis
-                        )
-                    }
-                } else null
+                label = null
             )
         }
     }
