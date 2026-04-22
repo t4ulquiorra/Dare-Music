@@ -529,6 +529,7 @@ class HomeViewModel @Inject constructor(
         }
 
         viewModelScope.launch(Dispatchers.IO) {
+        if (relatedAlbums.value.isNotEmpty() && similarArtists.value.isNotEmpty() && recommendedPlaylists.value.isNotEmpty()) return@launch
             val artistRecommendations = database.mostPlayedArtists(fromTimeStamp, limit = 15).first()
                 .filter { it.artist.isYouTubeArtist }
                 .shuffled().take(4)
