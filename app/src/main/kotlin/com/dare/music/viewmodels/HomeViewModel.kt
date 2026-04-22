@@ -595,21 +595,26 @@ class HomeViewModel @Inject constructor(
 
             val allRecommendations = (artistRecommendations + songRecommendations + albumRecommendations).shuffled()
             similarRecommendations.value = allRecommendations
-            relatedAlbums.value = allRecommendations
+            val newAlbums = allRecommendations
                 .flatMap { it.items }
                 .filterIsInstance<com.dare.innertube.models.AlbumItem>()
                 .distinctBy { it.id }
                 .take(10)
-            similarArtists.value = allRecommendations
+            if (newAlbums.isNotEmpty()) relatedAlbums.value = newAlbums
+
+            val newArtists = allRecommendations
                 .flatMap { it.items }
                 .filterIsInstance<com.dare.innertube.models.ArtistItem>()
                 .distinctBy { it.id }
                 .take(10)
-            recommendedPlaylists.value = allRecommendations
+            if (newArtists.isNotEmpty()) similarArtists.value = newArtists
+
+            val newPlaylists = allRecommendations
                 .flatMap { it.items }
                 .filterIsInstance<com.dare.innertube.models.PlaylistItem>()
                 .distinctBy { it.id }
                 .take(10)
+            if (newPlaylists.isNotEmpty()) recommendedPlaylists.value = newPlaylists
             allYtItems.value = similarRecommendations.value?.flatMap { it.items }.orEmpty() +
                     homePage.value?.sections?.flatMap { it.items }.orEmpty()
         }
