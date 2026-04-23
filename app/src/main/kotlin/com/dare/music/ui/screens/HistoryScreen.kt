@@ -404,36 +404,6 @@ fun HistoryScreen(
 
         val historyTitle = stringResource(R.string.history)
 
-        HideOnScrollFAB(
-            visible =
-                if (historySource == HistorySource.REMOTE) {
-                    filteredRemoteContent?.any { it.songs.isNotEmpty() } == true
-                } else {
-                    allEvents.isNotEmpty()
-                },
-            lazyListState = lazyListState,
-            icon = R.drawable.shuffle,
-            onClick = {
-                if (historySource == HistorySource.REMOTE && historyPage != null) {
-                    val songs = filteredRemoteContent?.flatMap { it.songs } ?: emptyList()
-                    if (songs.isNotEmpty()) {
-                        playerConnection.playQueue(
-                            ListQueue(
-                                title = historyTitle,
-                                items = songs.map { it.toMediaItem() }.shuffled(),
-                            ),
-                        )
-                    }
-                } else {
-                    playerConnection.playQueue(
-                        ListQueue(
-                            title = historyTitle,
-                            items = allEvents.map { it.song.toMediaItem() }.shuffled(),
-                        ),
-                    )
-                }
-            },
-        )
     }
 
     TopAppBar(

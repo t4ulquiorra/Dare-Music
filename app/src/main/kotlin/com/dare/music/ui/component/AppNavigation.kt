@@ -182,7 +182,7 @@ fun AppNavigationBar(
             Modifier
                 .padding(horizontal = 12.dp, vertical = 2.dp)
                 .height(50.dp)
-                .clip(RoundedCornerShape(18.dp))
+                .clip(RoundedCornerShape(15.dp))
         } else {
             Modifier
         },

@@ -30,6 +30,7 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.res.stringResource
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.ui.unit.dp
 import com.dare.music.LocalPlayerAwareWindowInsets
 import com.dare.music.R
@@ -76,6 +77,7 @@ fun BoxScope.HideOnScrollFAB(
             }
             FloatingActionButton(
                 onClick = onClick,
+                shape = RoundedCornerShape(15.dp),
             ) {
                 Icon(
                     painter = painterResource(icon),
@@ -127,6 +129,7 @@ fun BoxScope.HideOnScrollFAB(
             }
             FloatingActionButton(
                 onClick = onClick,
+                shape = RoundedCornerShape(15.dp),
             ) {
                 Icon(
                     painter = painterResource(icon),
@@ -178,6 +181,7 @@ fun BoxScope.HideOnScrollFAB(
             }
             FloatingActionButton(
                 onClick = onClick,
+                shape = RoundedCornerShape(15.dp),
             ) {
                 Icon(
                     painter = painterResource(icon),
