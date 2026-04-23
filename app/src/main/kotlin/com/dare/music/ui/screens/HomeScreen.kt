@@ -1186,7 +1186,7 @@ fun HomeScreen(
                                     .only(WindowInsetsSides.Horizontal)
                                     .asPaddingValues(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                         ) {
                             items(5) {
                                 Box(
@@ -1923,7 +1923,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Related albums",
                                         style = MaterialTheme.typography.titleLarge,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                     )
                                 }
                                 item(key = "related_albums_list") {
@@ -1942,7 +1942,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Similar artists",
                                         style = MaterialTheme.typography.titleLarge,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                     )
                                 }
                                 item(key = "similar_artists_list") {
@@ -1961,7 +1961,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Playlists you might like",
                                         style = MaterialTheme.typography.titleLarge,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 8.dp),
+                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                     )
                                 }
                                 item(key = "recommended_playlists_list") {
@@ -2524,14 +2524,7 @@ fun HomeScreen(
                 }
             }
 
-            HideOnScrollFAB(
-                visible = true,
-                lazyListState = lazylistState,
-                icon = R.drawable.search,
-                onClick = {
-                    navController.navigate("search_input")
-                },
-            )
+
         }
     }
 }
