@@ -1090,7 +1090,7 @@ fun HomeScreen(
                         HomeSection.RecommendedPlaylists to 1,
                     )
 
-                list.sortByDescending { section ->
+                list.sortedByDescending { section ->
                     when (section) {
                         is HomeSection.SimilarRecommendation -> 30 - section.index
                         is HomeSection.HomePageSection -> 20 - section.index
