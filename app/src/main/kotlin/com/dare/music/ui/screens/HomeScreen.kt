@@ -1022,74 +1022,16 @@ fun HomeScreen(
 
 
 
-            if (randomizeHomeOrder) {
-                list.sortedByDescending { section ->
-                    // Use a stable seed for each section based on the session seed + section ID hash
-                    // This ensures the weight for a specific section remains constant during a session (until refresh)
-                    // even if other sections appear/disappear, preventing jumping.
-                    val sectionRandom = Random(randomSeed + section.id.hashCode())
+            val defaultOrder =
+                mapOf(
+                    HomeSection.QuickPicks to 4,
+                    HomeSection.RelatedAlbums to 3,
+                    HomeSection.SimilarArtists to 2,
+                    HomeSection.RecommendedPlaylists to 1,
+                )
 
-                    // Flatten the base values to allow for more overlap and variation
-                    // All "main" sections start closer together
-                    val base =
-                        when (section) {
-                            HomeSection.SpeedDial,
-                            HomeSection.QuickPicks,
-                            HomeSection.DailyDiscover,
-                            -> 500
-
-                            // Top tier starts equal
-
-                            HomeSection.KeepListening,
-                            HomeSection.AccountPlaylists,
-                            HomeSection.ForgottenFavorites,
-                            HomeSection.FromTheCommunity,
-                            -> 300
-
-                            // Middle tier starts equal
-
-                            else -> 100 // Bottom tier
-                        }
-
-                    val modifier =
-                        when (section) {
-                            // Top tier: High variance to allow shuffling among themselves
-                            // Range: [500-200, 500+400] = [300, 900]
-                            HomeSection.SpeedDial,
-                            HomeSection.QuickPicks,
-                            HomeSection.DailyDiscover,
-                            -> sectionRandom.nextInt(-200, 400)
-
-                            // Middle tier: Can jump up to challenge top tier, or drop lower
-                            // Range: [300-100, 300+400] = [200, 700]
-                            // This allows them to occasionally appear above a "bad roll" top tier item
-                            HomeSection.KeepListening,
-                            HomeSection.AccountPlaylists,
-                            HomeSection.ForgottenFavorites,
-                            HomeSection.FromTheCommunity,
-                            -> sectionRandom.nextInt(-100, 400)
-
-                            // Bottom tier: Standard variance
-                            else -> sectionRandom.nextInt(-50, 50)
-                        }
-                    base + modifier
-                }
-            } else {
-                val defaultOrder =
-                    mapOf(
-                        HomeSection.QuickPicks to 4,
-                        HomeSection.RelatedAlbums to 3,
-                        HomeSection.SimilarArtists to 2,
-                        HomeSection.RecommendedPlaylists to 1,
-                    )
-
-                list.sortedByDescending { section ->
-                    when (section) {
-                        is HomeSection.SimilarRecommendation -> 30 - section.index
-                        is HomeSection.HomePageSection -> 20 - section.index
-                        else -> defaultOrder[section] ?: 0
-                    }
-                }
+            list.sortedByDescending { section ->
+                defaultOrder[section] ?: 0
             }
         }
 
