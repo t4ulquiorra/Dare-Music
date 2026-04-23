@@ -117,7 +117,6 @@ import com.dare.music.constants.GridThumbnailHeight
 import com.dare.music.constants.InnerTubeCookieKey
 import com.dare.music.constants.ListItemHeight
 import com.dare.music.constants.ListThumbnailSize
-import com.dare.music.constants.RandomizeHomeOrderKey
 import com.dare.music.constants.SmallGridThumbnailHeight
 import com.dare.music.constants.ThumbnailCornerRadius
 import com.dare.music.db.entities.Album
@@ -684,7 +683,7 @@ fun HomeScreen(
     val accountName by viewModel.accountName.collectAsState()
     val accountImageUrl by viewModel.accountImageUrl.collectAsState()
     val innerTubeCookie by rememberPreference(InnerTubeCookieKey, "")
-    val (randomizeHomeOrder) = rememberPreference(RandomizeHomeOrderKey, true)
+    val randomizeHomeOrder = false
 
     val shouldShowWrappedCard by viewModel.showWrappedCard.collectAsState()
     val wrappedState by viewModel.wrappedManager.state.collectAsState()
@@ -752,13 +751,9 @@ fun HomeScreen(
         ?.getStateFlow("wrapped_seen", false)
         ?.collectAsState() ?: remember { mutableStateOf(false) }
 
-    var randomSeed by rememberSaveable { mutableLongStateOf(System.currentTimeMillis()) }
 
-    LaunchedEffect(isRefreshing) {
-        if (isRefreshing) {
-            randomSeed = System.currentTimeMillis()
-        }
-    }
+
+
 
     val foundInSettings = stringResource(R.string.found_in_settings_content)
     LaunchedEffect(wrappedDismissed) {
@@ -1005,8 +1000,6 @@ fun HomeScreen(
 
     val homeSections =
         remember(
-            randomizeHomeOrder,
-            randomSeed,
             selectedChip,
             speedDialItems,
             quickPicks,
