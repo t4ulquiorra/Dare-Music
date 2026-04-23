@@ -1016,18 +1016,22 @@ fun HomeScreen(
             val chipActive = selectedChip != null
 
             if (!chipActive && quickPicks?.isNotEmpty() == true) list.add(HomeSection.QuickPicks)
+            if (!chipActive && keepListening?.isNotEmpty() == true) list.add(HomeSection.KeepListening)
             if (!chipActive && relatedAlbums.isNotEmpty()) list.add(HomeSection.RelatedAlbums)
             if (!chipActive && similarArtists.isNotEmpty()) list.add(HomeSection.SimilarArtists)
             if (!chipActive && recommendedPlaylists.isNotEmpty()) list.add(HomeSection.RecommendedPlaylists)
+            if (!chipActive && dailyDiscover?.isNotEmpty() == true) list.add(HomeSection.DailyDiscover)
 
 
 
             val defaultOrder =
                 mapOf(
-                    HomeSection.QuickPicks to 4,
-                    HomeSection.RelatedAlbums to 3,
-                    HomeSection.SimilarArtists to 2,
-                    HomeSection.RecommendedPlaylists to 1,
+                    HomeSection.QuickPicks to 6,
+                    HomeSection.KeepListening to 5,
+                    HomeSection.RelatedAlbums to 4,
+                    HomeSection.SimilarArtists to 3,
+                    HomeSection.RecommendedPlaylists to 2,
+                    HomeSection.DailyDiscover to 1,
                 )
 
             list.sortedByDescending { section ->
