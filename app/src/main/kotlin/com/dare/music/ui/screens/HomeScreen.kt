@@ -1084,17 +1084,13 @@ fun HomeScreen(
             } else {
                 val defaultOrder =
                     mapOf(
-                        HomeSection.SpeedDial to 100,
-                        HomeSection.QuickPicks to 90,
-                        HomeSection.FromTheCommunity to 80,
-                        HomeSection.DailyDiscover to 70,
-                        HomeSection.KeepListening to 60,
-                        HomeSection.AccountPlaylists to 50,
-                        HomeSection.ForgottenFavorites to 40,
-                        HomeSection.MoodAndGenres to 10,
+                        HomeSection.QuickPicks to 4,
+                        HomeSection.RelatedAlbums to 3,
+                        HomeSection.SimilarArtists to 2,
+                        HomeSection.RecommendedPlaylists to 1,
                     )
 
-                list.sortedByDescending { section ->
+                list.sortByDescending { section ->
                     when (section) {
                         is HomeSection.SimilarRecommendation -> 30 - section.index
                         is HomeSection.HomePageSection -> 20 - section.index
