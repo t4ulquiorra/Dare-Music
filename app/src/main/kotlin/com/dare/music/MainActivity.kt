@@ -724,7 +724,7 @@ class MainActivity : ComponentActivity() {
                                 (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
                                 MiniPlayerBottomSpacing +
                                 MiniPlayerHeight -
-                                (if (isLandscape) 6.dp else 8.dp),
+                                (if (isLandscape) 6.dp else 24.dp),
                         expandedBound = maxHeight,
                     )
 
@@ -926,14 +926,7 @@ class MainActivity : ComponentActivity() {
                                             )
                                         },
                                         actions = {
-                                            if (currentRoute == Screens.Library.route) {
-                                                IconButton(onClick = { navController.navigate("search_input") }) {
-                                                    Icon(
-                                                        painter = painterResource(R.drawable.search),
-                                                        contentDescription = stringResource(R.string.search),
-                                                    )
-                                                }
-                                            }
+
                                             IconButton(onClick = { showAccountDialog = true }) {
                                                 BadgedBox(badge = {
                                                     if (latestVersionName != BuildConfig.VERSION_NAME) {
