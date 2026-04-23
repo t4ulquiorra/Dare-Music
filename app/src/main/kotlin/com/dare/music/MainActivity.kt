@@ -1058,15 +1058,6 @@ class MainActivity : ComponentActivity() {
 
                             if (!showRail && currentRoute != "wrapped") {
                                 Box {
-                                    BottomSheetPlayer(
-                                        state = playerBottomSheetState,
-                                        navController = navController,
-                                        pureBlack = pureBlack,
-                                        positionState = positionState,
-                                        durationState = durationState,
-                                        modifier = Modifier,
-                                    )
-
                                     AppNavigationBar(
                                             navigationItems = navigationItems,
                                             currentRoute = currentRoute,
@@ -1096,6 +1087,15 @@ class MainActivity : ComponentActivity() {
                                                             }
                                                     },
                                         )
+
+                                    BottomSheetPlayer(
+                                        state = playerBottomSheetState,
+                                        navController = navController,
+                                        pureBlack = pureBlack,
+                                        positionState = positionState,
+                                        durationState = durationState,
+                                        modifier = Modifier,
+                                    )
 
                                     Box(
                                         modifier =

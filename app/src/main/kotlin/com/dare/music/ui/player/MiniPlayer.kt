@@ -143,24 +143,13 @@ fun MiniPlayer(
     durationState: MutableLongState,
     modifier: Modifier = Modifier,
 ) {
-    val useNewMiniPlayerDesign by rememberPreference(UseNewMiniPlayerDesignKey, true)
-
     // Create stable progress state - doesn't cause recomposition on position changes
     val progressState = remember { ProgressState(positionState, durationState) }
 
-    if (useNewMiniPlayerDesign) {
-        NewMiniPlayer(
-            progressState = progressState,
-            modifier = modifier,
-        )
-    } else {
-        Box(modifier = modifier.fillMaxWidth()) {
-            LegacyMiniPlayer(
-                progressState = progressState,
-                modifier = Modifier.align(Alignment.Center),
-            )
-        }
-    }
+    NewMiniPlayer(
+        progressState = progressState,
+        modifier = modifier,
+    )
 }
 
 // ============================================================================
@@ -373,9 +362,9 @@ private fun NewMiniPlayer(
                     .fillMaxWidth()
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(32.dp))
+                    .clip(RoundedCornerShape(16.dp))
                     .background(color = backgroundColor)
-                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(32.dp)),
+                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
         ) {
             when (miniPlayerBackground) {
                 MiniPlayerBackgroundStyle.BLUR -> {
