@@ -362,9 +362,9 @@ private fun NewMiniPlayer(
                     .fillMaxWidth()
                     .height(64.dp)
                     .offset { IntOffset(offsetXAnimatable.value.roundToInt(), 0) }
-                    .clip(RoundedCornerShape(16.dp))
+                    .clip(RoundedCornerShape(15.dp))
                     .background(color = backgroundColor)
-                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(16.dp)),
+                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(15.dp)),
         ) {
             when (miniPlayerBackground) {
                 MiniPlayerBackgroundStyle.BLUR -> {
@@ -556,8 +556,8 @@ private fun NewMiniPlayerPlayButton(
             modifier =
                 Modifier
                     .size(40.dp)
-                    .clip(CircleShape)
-                    .border(1.dp, outlineColor.copy(alpha = 0.3f), CircleShape)
+                    .clip(RoundedCornerShape(8.dp))
+                    .border(1.dp, outlineColor.copy(alpha = 0.3f), RoundedCornerShape(8.dp))
                     .clickable {
                         if (isListenTogetherGuest) {
                             playerConnection.toggleMute()
@@ -582,7 +582,7 @@ private fun NewMiniPlayerPlayButton(
                     model = thumbnailUrl,
                     contentDescription = null,
                     contentScale = ContentScale.Crop,
-                    modifier = Modifier.fillMaxSize().clip(CircleShape),
+                    modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(8.dp)),
                 )
             }
 

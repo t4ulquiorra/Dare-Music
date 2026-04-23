@@ -722,7 +722,7 @@ class MainActivity : ComponentActivity() {
                         collapsedBound =
                             bottomInset +
                                 (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
-                                (if (useNewMiniPlayerDesign) MiniPlayerBottomSpacing else 0.dp) +
+                                MiniPlayerBottomSpacing +
                                 MiniPlayerHeight -
                                 (if (isLandscape) 10.dp else 12.dp),
                         expandedBound = maxHeight,
@@ -1108,7 +1108,7 @@ class MainActivity : ComponentActivity() {
                                                     val progress = playerBottomSheetState.progress
                                                     alpha =
                                                         if (progress > 0f ||
-                                                            (useNewMiniPlayerDesign && !shouldShowNavigationBar)
+                                                            !shouldShowNavigationBar
                                                         ) {
                                                             0f
                                                         } else {
@@ -1138,7 +1138,7 @@ class MainActivity : ComponentActivity() {
                                             .graphicsLayer {
                                                 val progress = playerBottomSheetState.progress
                                                 alpha =
-                                                    if (progress > 0f || (useNewMiniPlayerDesign && !shouldShowNavigationBar)) 0f else 1f
+                                                    if (progress > 0f || !shouldShowNavigationBar) 0f else 1f
                                             }.background(baseBg),
                                 )
                             }
