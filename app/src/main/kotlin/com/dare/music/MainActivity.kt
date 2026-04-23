@@ -723,8 +723,7 @@ class MainActivity : ComponentActivity() {
                             bottomInset +
                                 (if (!showRail && shouldShowNavigationBar) navPadding else 0.dp) +
                                 MiniPlayerBottomSpacing +
-                                MiniPlayerHeight -
-                                (if (isLandscape) 6.dp else 24.dp),
+                                MiniPlayerHeight - 24.dp,
                         expandedBound = maxHeight,
                     )
 
