@@ -181,6 +181,7 @@ fun AppNavigationBar(
         modifier = if (isLandscape) {
             Modifier
                 .padding(horizontal = 12.dp, vertical = 2.dp)
+                .height(50.dp)
                 .clip(RoundedCornerShape(18.dp))
         } else {
             Modifier
