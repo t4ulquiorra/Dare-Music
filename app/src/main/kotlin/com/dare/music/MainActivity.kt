@@ -1078,7 +1078,7 @@ class MainActivity : ComponentActivity() {
                                                 Modifier
                                                     .align(Alignment.BottomCenter)
                                                     .padding(bottom = if (isLandscape) bottomInset else 0.dp)
-                                                    .height(bottomInset + navPadding + MiniPlayerHeight * 0.7f)
+                                                    .height(bottomInset + navPadding + if (!isLandscape) MiniPlayerHeight * 0.7f else 0.dp)
                                                     .graphicsLayer {
                                                         val navBarHeightPx = navigationBarHeight.toPx()
                                                         val totalHeightPx = navBarTotalHeight.toPx()
