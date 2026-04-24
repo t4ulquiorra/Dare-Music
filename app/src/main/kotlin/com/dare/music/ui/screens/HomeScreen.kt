@@ -1048,6 +1048,47 @@ fun HomeScreen(
         forgottenFavoritesLazyGridState.scrollToItem(0)
     }
 
+    Column(modifier = Modifier.fillMaxSize()) {
+        // Fixed header
+        val (firstLaunchDate) = rememberPreference(FirstLaunchDateKey, System.currentTimeMillis())
+        val daysSinceInstall = remember(firstLaunchDate) {
+            ((System.currentTimeMillis() - firstLaunchDate) / (1000 * 60 * 60 * 24)).toInt()
+        }
+        val (greetingMain, greetingSub) = remember(daysSinceInstall) {
+            when {
+                daysSinceInstall < 3 -> Pair("Hey,", "What's up?")
+                daysSinceInstall < 5 -> Pair("Yo!", "What's good?")
+                else                 -> Pair("Yo!", "What's good? Same as usual?")
+            }
+        }
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .statusBarsPadding()
+                .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 4.dp),
+            horizontalArrangement = Arrangement.SpaceBetween,
+            verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+        ) {
+            Column(modifier = Modifier.weight(1f)) {
+                Text(
+                    text = greetingMain,
+                    style = MaterialTheme.typography.displayLarge,
+                    fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                )
+                Text(
+                    text = greetingSub,
+                    style = MaterialTheme.typography.bodyLarge,
+                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                )
+            }
+            IconButton(onClick = { showAccountDialog = true }) {
+                Icon(
+                    painter = painterResource(R.drawable.account),
+                    contentDescription = null,
+                )
+            }
+        }
+
     PullToRefreshBox(
         state = pullRefreshState,
         isRefreshing = isRefreshing,
@@ -1092,36 +1133,6 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
-                item(key = "page_title") {
-                    val (firstLaunchDate) = rememberPreference(FirstLaunchDateKey, System.currentTimeMillis())
-                    val daysSinceInstall = remember(firstLaunchDate) {
-                        ((System.currentTimeMillis() - firstLaunchDate) / (1000 * 60 * 60 * 24)).toInt()
-                    }
-                    val (greetingMain, greetingSub) = remember(daysSinceInstall) {
-                        when {
-                            daysSinceInstall < 3 -> Pair("Hey,", "What's up?")
-                            daysSinceInstall < 5 -> Pair("Yo!", "What's good?")
-                            else                 -> Pair("Yo!", "What's good? Same as usual?")
-                        }
-                    }
-                    Column(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 20.dp),
-                    ) {
-                        Text(
-                            text = greetingMain,
-                            style = MaterialTheme.typography.displayLarge,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        )
-                        Text(
-                            text = greetingSub,
-                            style = MaterialTheme.typography.bodyLarge,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        )
-                    }
-                }
-
 
                 if (isLoading && homePage?.chips.isNullOrEmpty()) {
                     item(key = "chips_shimmer") {
@@ -2474,5 +2485,6 @@ fun HomeScreen(
 
 
         }
+    }
     }
 }
