@@ -1100,21 +1100,31 @@ fun HomeScreen(
                             else      -> "Good evening"
                         }
                     }
-                    Column(
+                    Row(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+                            .padding(start = 16.dp, end = 4.dp, top = 48.dp, bottom = 8.dp),
+                        horizontalArrangement = Arrangement.SpaceBetween,
+                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
                     ) {
-                        Text(
-                            text = greetingText,
-                            style = MaterialTheme.typography.displaySmall,
-                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                        )
-                        Text(
-                            text = "What do you want to listen to?",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
-                        )
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text(
+                                text = greetingText,
+                                style = MaterialTheme.typography.displaySmall,
+                                fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
+                            )
+                            Text(
+                                text = "What do you want to listen to?",
+                                style = MaterialTheme.typography.bodyMedium,
+                                color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                            )
+                        }
+                        IconButton(onClick = { showAccountDialog = true }) {
+                            Icon(
+                                painter = painterResource(R.drawable.account),
+                                contentDescription = null,
+                            )
+                        }
                     }
                 }
 
