@@ -1092,27 +1092,31 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "page_title") {
-                    val greetingText = remember {
-                        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                    val context = androidx.compose.ui.platform.LocalContext.current
+                    val firstLaunchDate by context.dataStore.data.map { it[com.dare.music.constants.FirstLaunchDateKey] ?: System.currentTimeMillis() }.collectAsState(initial = System.currentTimeMillis())
+                    val daysSinceInstall = remember(firstLaunchDate) {
+                        ((System.currentTimeMillis() - firstLaunchDate) / (1000 * 60 * 60 * 24)).toInt()
+                    }
+                    val (greetingMain, greetingSub) = remember(daysSinceInstall) {
                         when {
-                            hour < 12 -> "Good morning"
-                            hour < 17 -> "Good afternoon"
-                            else      -> "Good evening"
+                            daysSinceInstall < 3 -> Pair("Hey,", "What's up?")
+                            daysSinceInstall < 5 -> Pair("Yo!", "What's good?")
+                            else                 -> Pair("Yo!", "What's good? Same as usual?")
                         }
                     }
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
+                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
                     ) {
                         Text(
-                            text = greetingText,
-                            style = MaterialTheme.typography.displaySmall,
+                            text = greetingMain,
+                            style = MaterialTheme.typography.displayLarge,
                             fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         )
                         Text(
-                            text = "What do you want to listen to?",
-                            style = MaterialTheme.typography.bodyMedium,
+                            text = greetingSub,
+                            style = MaterialTheme.typography.bodyLarge,
                             color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
                         )
                     }
@@ -1127,7 +1131,7 @@ fun HomeScreen(
                                     .only(WindowInsetsSides.Horizontal)
                                     .asPaddingValues(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
                         ) {
                             items(5) {
                                 Box(
@@ -1865,7 +1869,7 @@ fun HomeScreen(
                                         text = "Related albums",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
                                     )
                                 }
                                 item(key = "related_albums_list") {
@@ -1885,7 +1889,7 @@ fun HomeScreen(
                                         text = "Similar artists",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
                                     )
                                 }
                                 item(key = "similar_artists_list") {
@@ -1905,7 +1909,7 @@ fun HomeScreen(
                                         text = "Playlists you might like",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
                                     )
                                 }
                                 item(key = "recommended_playlists_list") {

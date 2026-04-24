@@ -625,6 +625,10 @@ class MainActivity : ComponentActivity() {
 
                     dataStore.edit { settings ->
                         settings[LastSeenVersionKey] = currentVersion
+                        // Store first launch date if not already set
+                        if (settings[com.dare.music.constants.FirstLaunchDateKey] == null) {
+                            settings[com.dare.music.constants.FirstLaunchDateKey] = System.currentTimeMillis()
+                        }
                     }
                 }
 

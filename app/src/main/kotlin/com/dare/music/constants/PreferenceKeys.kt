@@ -706,3 +706,5 @@ val CountryCodeToName =
         "YE" to "Yemen",
         "ZW" to "Zimbabwe",
     )
+
+val FirstLaunchDateKey = longPreferencesKey("first_launch_date")
