@@ -1161,7 +1161,9 @@ fun HomeScreen(
 
             LazyColumn(
                 state = lazylistState,
-                contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
+                contentPadding = LocalPlayerAwareWindowInsets.current
+                    .exclude(WindowInsets.statusBars)
+                    .asPaddingValues(),
             ) {
 
                 if (isLoading && homePage?.chips.isNullOrEmpty()) {
