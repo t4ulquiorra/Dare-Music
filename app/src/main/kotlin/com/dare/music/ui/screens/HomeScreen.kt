@@ -1107,7 +1107,7 @@ fun HomeScreen(
                     Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 4.dp),
+                            .padding(start = 16.dp, end = 16.dp, top = 12.dp, bottom = 20.dp),
                     ) {
                         Text(
                             text = greetingMain,
@@ -1131,7 +1131,7 @@ fun HomeScreen(
                                     .only(WindowInsetsSides.Horizontal)
                                     .asPaddingValues(),
                             horizontalArrangement = Arrangement.spacedBy(8.dp),
-                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                            modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 2.dp),
                         ) {
                             items(5) {
                                 Box(
@@ -1869,7 +1869,7 @@ fun HomeScreen(
                                         text = "Related albums",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 2.dp),
                                     )
                                 }
                                 item(key = "related_albums_list") {
@@ -1889,7 +1889,7 @@ fun HomeScreen(
                                         text = "Similar artists",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 2.dp),
                                     )
                                 }
                                 item(key = "similar_artists_list") {
@@ -1909,7 +1909,7 @@ fun HomeScreen(
                                         text = "Playlists you might like",
                                         style = MaterialTheme.typography.titleLarge,
                                         fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
-                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 8.dp),
+                                        modifier = Modifier.padding(start = 16.dp, end = 16.dp, top = 4.dp, bottom = 2.dp),
                                     )
                                 }
                                 item(key = "recommended_playlists_list") {
