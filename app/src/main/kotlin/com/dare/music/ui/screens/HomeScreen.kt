@@ -1092,23 +1092,29 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "page_title") {
-                    Row(
+                    val greetingText = remember {
+                        val hour = java.util.Calendar.getInstance().get(java.util.Calendar.HOUR_OF_DAY)
+                        when {
+                            hour < 12 -> "Good morning"
+                            hour < 17 -> "Good afternoon"
+                            else      -> "Good evening"
+                        }
+                    }
+                    Column(
                         modifier = Modifier
                             .fillMaxWidth()
-                            .padding(start = 16.dp, end = 4.dp, top = 8.dp, bottom = 8.dp),
-                        horizontalArrangement = Arrangement.SpaceBetween,
-                        verticalAlignment = androidx.compose.ui.Alignment.CenterVertically,
+                            .padding(start = 16.dp, end = 16.dp, top = 24.dp, bottom = 8.dp),
                     ) {
                         Text(
-                            text = "Quick picks",
+                            text = greetingText,
                             style = MaterialTheme.typography.displaySmall,
+                            fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                         )
-                        IconButton(onClick = { showAccountDialog = true }) {
-                            Icon(
-                                painter = painterResource(R.drawable.account),
-                                contentDescription = null,
-                            )
-                        }
+                        Text(
+                            text = "What do you want to listen to?",
+                            style = MaterialTheme.typography.bodyMedium,
+                            color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.6f),
+                        )
                     }
                 }
 
@@ -1858,6 +1864,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Related albums",
                                         style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                     )
                                 }
@@ -1877,6 +1884,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Similar artists",
                                         style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                     )
                                 }
@@ -1896,6 +1904,7 @@ fun HomeScreen(
                                     Text(
                                         text = "Playlists you might like",
                                         style = MaterialTheme.typography.titleLarge,
+                                        fontWeight = androidx.compose.ui.text.font.FontWeight.Bold,
                                         modifier = Modifier.padding(horizontal = 16.dp, vertical = 16.dp),
                                     )
                                 }
