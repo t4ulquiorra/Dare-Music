@@ -111,6 +111,7 @@ import com.dare.music.LocalListenTogetherManager
 import com.dare.music.LocalPlayerAwareWindowInsets
 import com.dare.music.LocalPlayerConnection
 import com.dare.music.R
+import com.dare.music.constants.FirstLaunchDateKey
 import com.dare.music.constants.GridItemSize
 import com.dare.music.constants.GridItemsSizeKey
 import com.dare.music.constants.GridThumbnailHeight
@@ -1092,8 +1093,7 @@ fun HomeScreen(
                 contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
             ) {
                 item(key = "page_title") {
-                    val context = androidx.compose.ui.platform.LocalContext.current
-                    val firstLaunchDate by context.dataStore.data.map { it[com.dare.music.constants.FirstLaunchDateKey] ?: System.currentTimeMillis() }.collectAsState(initial = System.currentTimeMillis())
+                    val (firstLaunchDate) = rememberPreference(FirstLaunchDateKey, System.currentTimeMillis())
                     val daysSinceInstall = remember(firstLaunchDate) {
                         ((System.currentTimeMillis() - firstLaunchDate) / (1000 * 60 * 60 * 24)).toInt()
                     }
