@@ -1132,7 +1132,7 @@ fun HomeScreen(
                 modifier =
                     Modifier
                         .align(Alignment.TopCenter)
-                        .padding(top = 140.dp),
+                        .padding(top = 70.dp),
             )
         },
     ) {
