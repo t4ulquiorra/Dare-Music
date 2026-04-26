@@ -1165,6 +1165,7 @@ fun HomeScreen(
                 state = lazylistState,
                 contentPadding = LocalPlayerAwareWindowInsets.current
                     .exclude(WindowInsets.statusBars)
+                    .only(WindowInsetsSides.Bottom + WindowInsetsSides.Horizontal)
                     .asPaddingValues(),
             ) {
 
