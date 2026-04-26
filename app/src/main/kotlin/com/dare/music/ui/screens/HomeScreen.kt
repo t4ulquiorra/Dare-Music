@@ -28,6 +28,10 @@ import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.input.nestedscroll.NestedScrollConnection
+import androidx.compose.ui.input.nestedscroll.NestedScrollSource
+import androidx.compose.ui.input.nestedscroll.nestedScroll
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.offset
@@ -1748,7 +1752,14 @@ fun HomeScreen(
                                             Modifier
                                                 .fillMaxWidth()
                                                 .height(ListItemHeight * 4)
-                                                .animateItem(),
+                                                .animateItem()
+                                                .nestedScroll(remember {
+                                                    object : NestedScrollConnection {
+                                                        override fun onPreScroll(available: Offset, source: NestedScrollSource): Offset {
+                                                            return if (available.y != 0f && available.x == 0f) available else Offset.Zero
+                                                        }
+                                                    }
+                                                }),
                                     ) {
                                         items(
                                             items = quickPicks.distinctBy { it.id },
