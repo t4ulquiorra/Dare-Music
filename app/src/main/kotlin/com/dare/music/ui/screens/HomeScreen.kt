@@ -1740,7 +1740,6 @@ fun HomeScreen(
                                     LazyHorizontalGrid(
                                         state = quickPicksLazyGridState,
                                         rows = GridCells.Fixed(4),
-                                        flingBehavior = rememberSnapFlingBehavior(quickPicksSnapLayoutInfoProvider),
                                         contentPadding =
                                             WindowInsets.systemBars
                                                 .only(WindowInsetsSides.Horizontal)
