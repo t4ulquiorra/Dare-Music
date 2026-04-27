@@ -1053,53 +1053,94 @@ fun GlassGridItem(
     isPlaying: Boolean = false,
 ) {
     val gridHeight = currentGridThumbnailHeight()
-    val cornerRadius = 24.dp
-    Box(
+    val cardWidth = gridHeight * 0.75f
+    val cardHeight = gridHeight * 1.25f
+    val cornerRadius = 20.dp
+    val imageHeight = cardHeight * 0.65f
+    val infoPanelHeight = cardHeight * 0.35f
+
+    Column(
         modifier = modifier
-            .padding(12.dp)
-            .width(gridHeight)
-            .height(gridHeight)
+            .padding(10.dp)
+            .width(cardWidth)
+            .height(cardHeight)
             .clip(RoundedCornerShape(cornerRadius))
             .border(
-                width = 0.5.dp,
+                width = 0.8.dp,
                 brush = Brush.verticalGradient(
-                    colors = listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.03f))
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.25f),
+                        Color.White.copy(alpha = 0.06f),
+                        Color.White.copy(alpha = 0.12f),
+                    )
                 ),
                 shape = RoundedCornerShape(cornerRadius),
-            ),
+            )
+            .background(Color(0xFF111111)),
     ) {
-        ItemThumbnail(
-            thumbnailUrl = item.thumbnail,
-            isActive = isActive,
-            isPlaying = isPlaying,
-            shape = RoundedCornerShape(cornerRadius),
-            modifier = Modifier.fillMaxSize(),
-        )
-        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)))
+        // Image area
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(gridHeight * 0.55f)
-                .align(Alignment.BottomCenter)
-                .background(
-                    Brush.verticalGradient(
-                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f), Color.Black.copy(alpha = 0.92f))
+                .height(imageHeight),
+        ) {
+            ItemThumbnail(
+                thumbnailUrl = item.thumbnail,
+                isActive = isActive,
+                isPlaying = isPlaying,
+                shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
+                modifier = Modifier.fillMaxSize(),
+            )
+            // Subtle bottom fade on image
+            Box(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .height(imageHeight * 0.3f)
+                    .align(Alignment.BottomCenter)
+                    .background(
+                        Brush.verticalGradient(
+                            colors = listOf(Color.Transparent, Color(0xFF111111).copy(alpha = 0.6f))
+                        )
                     )
+            )
+            // Play button bottom-right
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp)
+                    .size(36.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .border(0.8.dp, Color.White.copy(alpha = 0.25f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.play),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(16.dp),
                 )
-        )
+            }
+        }
+
+        // Info panel
         Column(
             modifier = Modifier
-                .align(Alignment.BottomStart)
-                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
+                .fillMaxWidth()
+                .height(infoPanelHeight)
+                .background(Color(0xFF111111))
+                .padding(horizontal = 10.dp, vertical = 8.dp),
+            verticalArrangement = Arrangement.Center,
         ) {
             Text(
                 text = item.title,
-                style = MaterialTheme.typography.bodyLarge,
+                style = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
                 color = Color.White,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
+            Spacer(modifier = Modifier.height(2.dp))
             val subtitle = when (item) {
                 is AlbumItem -> joinByBullet(item.artists?.joinToString { it.name }, item.year?.toString())
                 is PlaylistItem -> joinByBullet(item.author?.name, item.songCountText)
@@ -1109,7 +1150,7 @@ fun GlassGridItem(
                 Text(
                     text = subtitle,
                     style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.6f),
+                    color = Color.White.copy(alpha = 0.55f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
