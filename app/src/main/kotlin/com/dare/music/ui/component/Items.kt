@@ -1055,7 +1055,7 @@ fun GlassGridItem(
 ) {
     val gridHeight = currentGridThumbnailHeight()
     val cardWidth = gridHeight * 0.75f
-    val cardHeight = gridHeight * 1.25f
+    val cardHeight = gridHeight * 1.0f
     val cornerRadius = 20.dp
     val imageHeight = cardHeight * 0.65f
     val infoPanelHeight = cardHeight * 0.35f
