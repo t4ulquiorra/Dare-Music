@@ -156,9 +156,7 @@ fun LibraryPodcastsScreen(
     Box(
         modifier =
             Modifier
-                .fillMaxSize()
-
-                ),
+                .fillMaxSize(),
     ) {
         // Chip row header — same pattern as LibrarySongsScreen
         val chipsHeader = @Composable {
@@ -465,14 +463,6 @@ fun LibraryPodcastsScreen(
             }
         }
 
-        Indicator(
-            isRefreshing = isRefreshing,
-            state = pullToRefreshState,
-            modifier =
-                Modifier
-                    .align(Alignment.TopCenter)
-                    .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
-        )
     }
 }
 

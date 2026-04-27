@@ -656,16 +656,6 @@ fun AutoPlaylistScreen(
             headerItems = 2,
         )
 
-        if (canRefresh) {
-            Indicator(
-                isRefreshing = isRefreshing,
-                state = pullRefreshState,
-                modifier =
-                    Modifier
-                        .align(Alignment.TopCenter)
-                        .padding(LocalPlayerAwareWindowInsets.current.asPaddingValues()),
-            )
-        }
 
         // Upload FAB for uploaded playlist - positioned above mini player
         if (playlistType == PlaylistType.UPLOADED) {

@@ -16,6 +16,7 @@ import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkOut
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.Orientation
@@ -58,6 +59,8 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.blur
+import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
 import androidx.compose.ui.graphics.graphicsLayer
@@ -461,7 +464,17 @@ fun SongGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
-) = GridItem(
+) {
+    if (item is AlbumItem || item is PlaylistItem) {
+        GlassGridItem(
+            item = item,
+            modifier = modifier,
+            isActive = isActive,
+            isPlaying = isPlaying,
+        )
+        return
+    }
+    GridItem(
     title = {
         Text(
             text = song.song.title,
@@ -1043,6 +1056,123 @@ fun YouTubeListItem(
     }
 }
 
+
+@Composable
+fun GlassGridItem(
+    item: YTItem,
+    modifier: Modifier = Modifier,
+    isActive: Boolean = false,
+    isPlaying: Boolean = false,
+    onClick: () -> Unit = {},
+    onLongClick: () -> Unit = {},
+) {
+    val gridHeight = currentGridThumbnailHeight()
+    val cornerRadius = 24.dp
+
+    Box(
+        modifier = modifier
+            .padding(12.dp)
+            .width(gridHeight)
+            .height(gridHeight)
+            .clip(RoundedCornerShape(cornerRadius))
+            .border(
+                width = 0.5.dp,
+                brush = Brush.verticalGradient(
+                    colors = listOf(
+                        Color.White.copy(alpha = 0.15f),
+                        Color.White.copy(alpha = 0.03f),
+                    )
+                ),
+                shape = RoundedCornerShape(cornerRadius),
+            )
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+    ) {
+        // Thumbnail image
+        ItemThumbnail(
+            thumbnailUrl = item.thumbnail,
+            isActive = isActive,
+            isPlaying = isPlaying,
+            shape = RoundedCornerShape(cornerRadius),
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Dark overlay to mute the image slightly
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color.Black.copy(alpha = 0.15f))
+        )
+
+        // Bottom gradient for text readability
+        Box(
+            modifier = Modifier
+                .fillMaxWidth()
+                .height(gridHeight * 0.55f)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colors = listOf(
+                            Color.Transparent,
+                            Color.Black.copy(alpha = 0.75f),
+                            Color.Black.copy(alpha = 0.92f),
+                        )
+                    )
+                )
+        )
+
+        // Text overlay at bottom
+        Column(
+            modifier = Modifier
+                .align(Alignment.BottomStart)
+                .padding(start = 12.dp, end = 44.dp, bottom = 12.dp),
+        ) {
+            Text(
+                text = item.title,
+                style = MaterialTheme.typography.bodyLarge,
+                fontWeight = FontWeight.Bold,
+                color = Color.White,
+                maxLines = 1,
+                overflow = TextOverflow.Ellipsis,
+            )
+            val subtitle = when (item) {
+                is AlbumItem -> joinByBullet(item.artists?.joinToString { it.name }, item.year?.toString())
+                is PlaylistItem -> joinByBullet(item.author?.name, item.songCountText)
+                else -> null
+            }
+            if (subtitle != null) {
+                Text(
+                    text = subtitle,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.White.copy(alpha = 0.6f),
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                )
+            }
+        }
+
+        // Glass play button bottom-right
+        if (item is AlbumItem && !isActive) {
+            Box(
+                modifier = Modifier
+                    .align(Alignment.BottomEnd)
+                    .padding(10.dp)
+                    .size(32.dp)
+                    .clip(CircleShape)
+                    .background(Color.White.copy(alpha = 0.15f))
+                    .border(0.5.dp, Color.White.copy(alpha = 0.3f), CircleShape),
+                contentAlignment = Alignment.Center,
+            ) {
+                Icon(
+                    painter = painterResource(R.drawable.play),
+                    contentDescription = null,
+                    tint = Color.White,
+                    modifier = Modifier.size(14.dp),
+                )
+            }
+        }
+    }
+}
+
 @Composable
 fun YouTubeGridItem(
     item: YTItem,
@@ -1146,7 +1276,8 @@ fun YouTubeGridItem(
     thumbnailRatio = thumbnailRatio,
     fillMaxWidth = fillMaxWidth,
     modifier = modifier
-)
+    )
+}
 
 @Composable
 fun LocalSongsGrid(
