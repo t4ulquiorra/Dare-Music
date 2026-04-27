@@ -1848,21 +1848,7 @@ fun HomeScreen(
                                     val title = stringResource(R.string.your_daily_discover)
                                     NavigationTitle(
                                         title = title,
-                                        onPlayAllClick = {
-                                            val queueItems =
-                                                discoverList.mapNotNull {
-                                                    (it.recommendation as? SongItem)?.toMediaMetadata()
-                                                }
-
-                                            if (queueItems.isNotEmpty()) {
-                                                playerConnection.playQueue(
-                                                    ListQueue(
-                                                        title = title,
-                                                        items = queueItems.map { it.toMediaItem() },
-                                                    ),
-                                                )
-                                            }
-                                        },
+                                        onPlayAllClick = null,
                                     )
                                 }
 
