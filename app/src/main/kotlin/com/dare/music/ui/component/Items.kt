@@ -59,7 +59,6 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
-import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Shape
@@ -464,17 +463,7 @@ fun SongGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
-) {
-    if (item is AlbumItem || item is PlaylistItem) {
-        GlassGridItem(
-            item = item,
-            modifier = modifier,
-            isActive = isActive,
-            isPlaying = isPlaying,
-        )
-        return
-    }
-    GridItem(
+) = GridItem(
     title = {
         Text(
             text = song.song.title,
@@ -1056,19 +1045,15 @@ fun YouTubeListItem(
     }
 }
 
-
 @Composable
 fun GlassGridItem(
     item: YTItem,
     modifier: Modifier = Modifier,
     isActive: Boolean = false,
     isPlaying: Boolean = false,
-    onClick: () -> Unit = {},
-    onLongClick: () -> Unit = {},
 ) {
     val gridHeight = currentGridThumbnailHeight()
     val cornerRadius = 24.dp
-
     Box(
         modifier = modifier
             .padding(12.dp)
@@ -1078,16 +1063,11 @@ fun GlassGridItem(
             .border(
                 width = 0.5.dp,
                 brush = Brush.verticalGradient(
-                    colors = listOf(
-                        Color.White.copy(alpha = 0.15f),
-                        Color.White.copy(alpha = 0.03f),
-                    )
+                    colors = listOf(Color.White.copy(alpha = 0.15f), Color.White.copy(alpha = 0.03f))
                 ),
                 shape = RoundedCornerShape(cornerRadius),
-            )
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+            ),
     ) {
-        // Thumbnail image
         ItemThumbnail(
             thumbnailUrl = item.thumbnail,
             isActive = isActive,
@@ -1095,15 +1075,7 @@ fun GlassGridItem(
             shape = RoundedCornerShape(cornerRadius),
             modifier = Modifier.fillMaxSize(),
         )
-
-        // Dark overlay to mute the image slightly
-        Box(
-            modifier = Modifier
-                .fillMaxSize()
-                .background(Color.Black.copy(alpha = 0.15f))
-        )
-
-        // Bottom gradient for text readability
+        Box(modifier = Modifier.fillMaxSize().background(Color.Black.copy(alpha = 0.15f)))
         Box(
             modifier = Modifier
                 .fillMaxWidth()
@@ -1111,20 +1083,14 @@ fun GlassGridItem(
                 .align(Alignment.BottomCenter)
                 .background(
                     Brush.verticalGradient(
-                        colors = listOf(
-                            Color.Transparent,
-                            Color.Black.copy(alpha = 0.75f),
-                            Color.Black.copy(alpha = 0.92f),
-                        )
+                        colors = listOf(Color.Transparent, Color.Black.copy(alpha = 0.75f), Color.Black.copy(alpha = 0.92f))
                     )
                 )
         )
-
-        // Text overlay at bottom
         Column(
             modifier = Modifier
                 .align(Alignment.BottomStart)
-                .padding(start = 12.dp, end = 44.dp, bottom = 12.dp),
+                .padding(start = 12.dp, end = 12.dp, bottom = 12.dp),
         ) {
             Text(
                 text = item.title,
@@ -1146,27 +1112,6 @@ fun GlassGridItem(
                     color = Color.White.copy(alpha = 0.6f),
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                )
-            }
-        }
-
-        // Glass play button bottom-right
-        if (item is AlbumItem && !isActive) {
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(10.dp)
-                    .size(32.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .border(0.5.dp, Color.White.copy(alpha = 0.3f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.play),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(14.dp),
                 )
             }
         }
@@ -1203,7 +1148,12 @@ fun YouTubeGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
     fillMaxWidth: Boolean = false,
-) = GridItem(
+) {
+    if (item is AlbumItem || item is PlaylistItem) {
+        GlassGridItem(item = item, modifier = modifier, isActive = isActive, isPlaying = isPlaying)
+        return
+    }
+    GridItem(
     title = {
         Text(
             text = item.title,
@@ -1276,7 +1226,7 @@ fun YouTubeGridItem(
     thumbnailRatio = thumbnailRatio,
     fillMaxWidth = fillMaxWidth,
     modifier = modifier
-    )
+)
 }
 
 @Composable
