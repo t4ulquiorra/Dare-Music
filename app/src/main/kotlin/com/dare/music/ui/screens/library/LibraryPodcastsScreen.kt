@@ -32,9 +32,7 @@ import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
-import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults.Indicator
 import androidx.compose.material3.pulltorefresh.pullToRefresh
-import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.DisposableEffect
 import androidx.compose.runtime.LaunchedEffect
@@ -153,26 +151,13 @@ fun LibraryPodcastsScreen(
         }
     }
 
-    var isRefreshing by remember { mutableStateOf(false) }
     val coroutineScope = rememberCoroutineScope()
-    val pullToRefreshState = rememberPullToRefreshState()
 
     Box(
         modifier =
             Modifier
                 .fillMaxSize()
-                .pullToRefresh(
-                    state = pullToRefreshState,
-                    isRefreshing = isRefreshing,
-                    onRefresh = {
-                        if (!isRefreshing) {
-                            isRefreshing = true
-                            coroutineScope.launch {
-                                viewModel.refreshAll()
-                                isRefreshing = false
-                            }
-                        }
-                    },
+
                 ),
     ) {
         // Chip row header — same pattern as LibrarySongsScreen
