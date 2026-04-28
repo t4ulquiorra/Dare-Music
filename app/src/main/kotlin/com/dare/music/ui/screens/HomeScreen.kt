@@ -5,6 +5,9 @@
 
 package com.dare.music.ui.screens
 
+import androidx.compose.ui.res.painterResource
+import com.dare.music.R
+
 import androidx.compose.foundation.ExperimentalFoundationApi
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
