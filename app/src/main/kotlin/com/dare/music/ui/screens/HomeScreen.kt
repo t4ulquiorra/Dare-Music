@@ -32,11 +32,11 @@ import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.items
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.filled.AccountCircle
-import androidx.compose.material.icons.filled.Pause
-import androidx.compose.material.icons.filled.PlayArrow
-import androidx.compose.material.icons.filled.Search
+
+
+
+
+
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.MaterialTheme
@@ -190,9 +190,9 @@ fun HomeScreen(
                     menuState.show {
                         when (item) {
                             is SongItem     -> YouTubeSongMenu(song = item, navController = navController, onDismiss = menuState::dismiss)
-                            is AlbumItem    -> YouTubeAlbumMenu(album = item, navController = navController, onDismiss = menuState::dismiss)
-                            is ArtistItem   -> YouTubeArtistMenu(artist = item, navController = navController, onDismiss = menuState::dismiss)
-                            is PlaylistItem -> YouTubePlaylistMenu(playlist = item, navController = navController, onDismiss = menuState::dismiss)
+                            is AlbumItem    -> YouTubeAlbumMenu(albumItem = item, navController = navController, onDismiss = menuState::dismiss)
+                            is ArtistItem   -> YouTubeArtistMenu(artist = item, onDismiss = menuState::dismiss)
+                            is PlaylistItem -> YouTubePlaylistMenu(playlist = item, coroutineScope = scope, onDismiss = menuState::dismiss)
                             else            -> {}
                         }
                     }
@@ -247,7 +247,7 @@ fun HomeScreen(
                         contentAlignment = Alignment.Center,
                     ) {
                         Icon(
-                            imageVector = Icons.Default.AccountCircle,
+                            painter = painterResource(R.drawable.account),
                             contentDescription = "Account",
                             tint = DareTextSecondary,
                             modifier = Modifier.size(24.dp),
@@ -274,7 +274,7 @@ fun HomeScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Icon(
-                            imageVector = Icons.Default.Search,
+                            painter = painterResource(R.drawable.search),
                             contentDescription = null,
                             tint = DareTextHint,
                             modifier = Modifier.size(20.dp),
@@ -521,7 +521,7 @@ private fun QuickPickCard(
             contentAlignment = Alignment.Center,
         ) {
             Icon(
-                imageVector = if (isActive && isPlaying) Icons.Default.Pause else Icons.Default.PlayArrow,
+                painter = painterResource(if (isActive && isPlaying) R.drawable.pause else R.drawable.play),
                 contentDescription = null,
                 tint     = Color.White,
                 modifier = Modifier.size(15.dp),

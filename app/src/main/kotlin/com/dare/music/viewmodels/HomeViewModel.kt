@@ -119,7 +119,7 @@ data class CachedHomeArtist(
     val thumbnail: String?,
     val channelId: String?,
 ) {
-    fun toArtistItem() = ArtistItem(
+    fun toArtistItem() = com.dare.innertube.models.ArtistItem(
         id              = id,
         title           = title,
         thumbnail       = thumbnail,
@@ -128,7 +128,7 @@ data class CachedHomeArtist(
         radioEndpoint   = null,
     )
     companion object {
-        fun from(item: ArtistItem) = CachedHomeArtist(
+        fun from(item: com.dare.innertube.models.ArtistItem) = CachedHomeArtist(
             id        = item.id,
             title     = item.title,
             thumbnail = item.thumbnail,
