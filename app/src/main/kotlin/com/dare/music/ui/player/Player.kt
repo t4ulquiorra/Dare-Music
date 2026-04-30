@@ -5,6 +5,7 @@
 
 package com.dare.music.ui.player
 
+
 import android.content.ClipData
 import android.content.ClipboardManager
 import android.content.Context
@@ -173,6 +174,7 @@ import dagger.hilt.android.EntryPointAccessors
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
+import com.kyant.backdrop.Backdrop
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import kotlin.math.max
@@ -191,6 +193,7 @@ fun BottomSheetPlayer(
     pureBlack: Boolean,
     positionState: MutableLongState,
     durationState: MutableLongState,
+    backdrop: Backdrop? = null,
 ) {
     val context = LocalContext.current
     val clipboardManager = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
@@ -596,6 +599,7 @@ fun BottomSheetPlayer(
             MiniPlayer(
                 positionState = positionState,
                 durationState = durationState,
+                backdrop = backdrop,
             )
         },
     ) {

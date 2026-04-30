@@ -286,4 +286,5 @@ dependencies {
     coreLibraryDesugaring(libs.desugaring)
 
     implementation(libs.timber)
+    implementation("io.github.kyant0:backdrop:1.0.6")
 }

@@ -178,6 +178,8 @@ import com.dare.music.ui.component.rememberBottomSheetState
 import com.dare.music.ui.component.shimmer.ShimmerTheme
 import com.dare.music.ui.menu.YouTubeSongMenu
 import com.dare.music.ui.player.BottomSheetPlayer
+import com.kyant.backdrop.backdrops.layerBackdrop
+import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.dare.music.ui.screens.Screens
 import com.dare.music.ui.screens.navigationBuilder
 import com.dare.music.ui.screens.settings.ChangelogScreen
@@ -1046,6 +1048,7 @@ class MainActivity : ComponentActivity() {
                                         pureBlack = pureBlack,
                                         positionState = positionState,
                                         durationState = durationState,
+                                        backdrop = glassBackdrop,
                                         modifier = Modifier,
                                     )
 
@@ -1107,6 +1110,7 @@ class MainActivity : ComponentActivity() {
                                         pureBlack = pureBlack,
                                         positionState = positionState,
                                         durationState = durationState,
+                                        backdrop = glassBackdrop,
                                     )
                                 }
 
@@ -1173,7 +1177,8 @@ class MainActivity : ComponentActivity() {
                                     onSearchLongClick = onRailSearchLongClick,
                                 )
                             }
-                            Box(Modifier.weight(1f)) {
+                            val glassBackdrop = rememberLayerBackdrop()
+                            Box(Modifier.weight(1f).layerBackdrop(glassBackdrop)) {
                                 // NavHost with animations (Material 3 Expressive style)
                                 NavHost(
                                     navController = navController,
