@@ -914,6 +914,8 @@ class MainActivity : ComponentActivity() {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
                     }
 
+                    val glassBackdrop = rememberLayerBackdrop()
+
                     Scaffold(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
                         topBar = {
@@ -1037,7 +1039,6 @@ class MainActivity : ComponentActivity() {
                             val positionState = remember { mutableLongStateOf(0L) }
                             val durationState = remember { mutableLongStateOf(0L) }
 
-                            val glassBackdrop = rememberLayerBackdrop()
                             // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
