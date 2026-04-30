@@ -1164,9 +1164,8 @@ fun GlassGridItem(
                         onDrawSurface = {
                             drawRect(Color(0xFF111111).copy(alpha = 0.35f))
                         }
-                    )
-                } else null) ?: Modifier
-            )
+                    ) else Modifier
+                } else Modifier)
             .border(
                 width = 0.8.dp,
                 brush = Brush.verticalGradient(
