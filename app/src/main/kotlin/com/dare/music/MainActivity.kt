@@ -1037,10 +1037,9 @@ class MainActivity : ComponentActivity() {
                             val positionState = remember { mutableLongStateOf(0L) }
                             val durationState = remember { mutableLongStateOf(0L) }
 
+                            val glassBackdrop = rememberLayerBackdrop()
                             // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
-
-                            val glassBackdrop = rememberLayerBackdrop()
 
                             if (!showRail && currentRoute != "wrapped") {
                                 Box {
