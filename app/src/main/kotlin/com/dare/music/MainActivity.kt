@@ -178,6 +178,7 @@ import com.dare.music.ui.component.rememberBottomSheetState
 import com.dare.music.ui.component.shimmer.ShimmerTheme
 import com.dare.music.ui.menu.YouTubeSongMenu
 import com.dare.music.ui.player.BottomSheetPlayer
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
 import com.kyant.backdrop.backdrops.rememberLayerBackdrop
 import com.dare.music.ui.screens.Screens
@@ -909,6 +910,7 @@ class MainActivity : ComponentActivity() {
                     LocalSyncUtils provides syncUtils,
                     LocalListenTogetherManager provides listenTogetherManager,
                     LocalChangelogState provides showChangelog,
+                    LocalGlassBackdrop provides glassBackdrop,
                 ) {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
@@ -1471,3 +1473,4 @@ val LocalSyncUtils = staticCompositionLocalOf<SyncUtils> { error("No SyncUtils p
 val LocalListenTogetherManager = staticCompositionLocalOf<com.dare.music.listentogether.ListenTogetherManager?> { null }
 val LocalChangelogState = staticCompositionLocalOf<MutableState<Boolean>> { error("No LocalChangelogState provided") }
 val LocalIsPlayerExpanded = compositionLocalOf { false }
+val LocalGlassBackdrop = staticCompositionLocalOf<Backdrop?> { null }

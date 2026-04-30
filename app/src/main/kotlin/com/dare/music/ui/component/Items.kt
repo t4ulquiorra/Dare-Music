@@ -90,6 +90,7 @@ import androidx.media3.exoplayer.offline.Download.STATE_QUEUED
 import android.graphics.RenderEffect
 import android.graphics.RuntimeShader
 import android.os.Build
+import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.effect
 import coil3.compose.AsyncImage
@@ -103,6 +104,7 @@ import com.dare.innertube.models.PodcastItem
 import com.dare.innertube.models.SongItem
 import com.dare.innertube.models.YTItem
 import com.dare.music.LocalDatabase
+import com.dare.music.LocalGlassBackdrop
 import com.dare.music.LocalDownloadUtil
 import com.dare.music.LocalPlayerConnection
 import com.dare.music.R
@@ -1088,6 +1090,7 @@ fun GlassGridItem(
     }
 
     val density = LocalDensity.current
+    val glassBackdrop = LocalGlassBackdrop.current
     Box(
         modifier = modifier
             .padding(6.dp)
@@ -1095,7 +1098,8 @@ fun GlassGridItem(
             .clip(RoundedCornerShape(cornerRadius))
             .then(
                 if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                    Modifier.drawBackdrop(
+                    if (glassBackdrop != null) Modifier.drawBackdrop(
+                        backdrop = glassBackdrop,
                         shape = { RoundedCornerShape(cornerRadius) },
                         effects = {
                             val refractionHeightPx = with(density) { 20.dp.toPx() }
@@ -1161,7 +1165,7 @@ fun GlassGridItem(
                             drawRect(Color(0xFF111111).copy(alpha = 0.35f))
                         }
                     )
-                } else Modifier
+                } else null) ?: Modifier
             )
             .border(
                 width = 0.8.dp,
