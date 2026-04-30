@@ -900,6 +900,8 @@ class MainActivity : ComponentActivity() {
 
                 val baseBg = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
 
+                val glassBackdrop = rememberLayerBackdrop()
+
                 CompositionLocalProvider(
                     LocalDatabase provides database,
                     LocalContentColor provides if (pureBlack) Color.White else contentColorFor(MaterialTheme.colorScheme.surface),
@@ -915,8 +917,6 @@ class MainActivity : ComponentActivity() {
                     if (showChangelog.value) {
                         ChangelogScreen(onDismiss = { showChangelog.value = false })
                     }
-
-                    val glassBackdrop = rememberLayerBackdrop()
 
                     Scaffold(
                         snackbarHost = { SnackbarHost(snackbarHostState) },
