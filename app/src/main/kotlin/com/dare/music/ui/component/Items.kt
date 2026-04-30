@@ -1097,7 +1097,7 @@ fun GlassGridItem(
             .size(cardSize)
             .clip(RoundedCornerShape(cornerRadius))
             .then(
-                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+                if (false) {
                     if (glassBackdrop != null) Modifier.drawBackdrop(
                         backdrop = glassBackdrop,
                         shape = { RoundedCornerShape(cornerRadius) },
