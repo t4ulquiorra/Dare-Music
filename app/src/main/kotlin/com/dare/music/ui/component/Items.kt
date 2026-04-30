@@ -1053,112 +1053,160 @@ fun GlassGridItem(
     isActive: Boolean = false,
     isPlaying: Boolean = false,
 ) {
+    val database = LocalDatabase.current
     val gridHeight = currentGridThumbnailHeight()
-    val cardWidth = gridHeight * 0.75f
-    val cardHeight = gridHeight * 1.0f
-    val cornerRadius = 20.dp
-    val imageHeight = cardHeight * 0.65f
-    val infoPanelHeight = cardHeight * 0.35f
+    val cardSize = gridHeight * 0.92f
+    val cornerRadius = 16.dp
 
-    Column(
+    // Liked / bookmarked state
+    val song by produceState<Song?>(initialValue = null, item.id) {
+        if (item is AlbumItem || item is SongItem) {
+            // no-op for non-song, handled below
+        }
+        value = null
+    }
+    val album by produceState<Album?>(initialValue = null, item.id) {
+        if (item is AlbumItem) value = database.album(item.id).firstOrNull()
+    }
+    val isLiked = album?.album?.bookmarkedAt != null
+
+    val subtitle = when (item) {
+        is AlbumItem    -> item.year?.toString()
+        is PlaylistItem -> item.author?.name
+        else            -> null
+    }
+    val artistLine = when (item) {
+        is AlbumItem    -> item.artists?.joinToString { it.name }
+        is PlaylistItem -> item.author?.name
+        else            -> null
+    }
+
+    Box(
         modifier = modifier
-            .padding(10.dp)
-            .width(cardWidth)
-            .height(cardHeight)
+            .padding(6.dp)
+            .size(cardSize)
             .clip(RoundedCornerShape(cornerRadius))
             .border(
                 width = 0.8.dp,
                 brush = Brush.verticalGradient(
                     colors = listOf(
-                        Color.White.copy(alpha = 0.25f),
-                        Color.White.copy(alpha = 0.06f),
-                        Color.White.copy(alpha = 0.12f),
+                        Color.White.copy(alpha = 0.22f),
+                        Color.White.copy(alpha = 0.05f),
                     )
                 ),
                 shape = RoundedCornerShape(cornerRadius),
-            )
-            .background(Color(0xFF111111)),
+            ),
     ) {
-        // Image area
+        // Full bleed thumbnail
+        AsyncImage(
+            model = item.thumbnail,
+            contentDescription = null,
+            contentScale = ContentScale.Crop,
+            modifier = Modifier.fillMaxSize(),
+        )
+
+        // Hard gradient overlay — bottom 55% of card
         Box(
             modifier = Modifier
                 .fillMaxWidth()
-                .height(imageHeight),
-        ) {
-            ItemThumbnail(
-                thumbnailUrl = item.thumbnail,
-                isActive = isActive,
-                isPlaying = isPlaying,
-                shape = RoundedCornerShape(topStart = cornerRadius, topEnd = cornerRadius),
-                modifier = Modifier.fillMaxSize(),
-            )
-            // Subtle bottom fade on image
-            Box(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .height(imageHeight * 0.3f)
-                    .align(Alignment.BottomCenter)
-                    .background(
-                        Brush.verticalGradient(
-                            colors = listOf(Color.Transparent, Color(0xFF111111).copy(alpha = 0.6f))
+                .fillMaxSize(0.65f)
+                .align(Alignment.BottomCenter)
+                .background(
+                    Brush.verticalGradient(
+                        colorStops = arrayOf(
+                            0.0f to Color.Transparent,
+                            0.45f to Color(0xFF0A0A0A).copy(alpha = 0.85f),
+                            1.0f to Color(0xFF000000),
                         )
                     )
-            )
-            // Play button bottom-right
-            Box(
-                modifier = Modifier
-                    .align(Alignment.BottomEnd)
-                    .padding(10.dp)
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(Color.White.copy(alpha = 0.15f))
-                    .border(0.8.dp, Color.White.copy(alpha = 0.25f), CircleShape),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.play),
-                    contentDescription = null,
-                    tint = Color.White,
-                    modifier = Modifier.size(16.dp),
                 )
-            }
-        }
+        )
 
-        // Info panel
+        // Text + badges — inside card, bottom-left
         Column(
             modifier = Modifier
-                .fillMaxWidth()
-                .height(infoPanelHeight)
-                .background(Color(0xFF111111))
-                .padding(horizontal = 10.dp, vertical = 8.dp),
-            verticalArrangement = Arrangement.Center,
+                .align(Alignment.BottomStart)
+                .padding(start = 10.dp, end = 48.dp, bottom = 10.dp),
+            verticalArrangement = Arrangement.spacedBy(2.dp),
         ) {
             Text(
-                text = item.title,
-                style = MaterialTheme.typography.bodyMedium,
+                text       = item.title,
+                color      = Color.White,
+                style      = MaterialTheme.typography.bodyMedium,
                 fontWeight = FontWeight.Bold,
-                color = Color.White,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
+                maxLines   = 1,
+                overflow   = TextOverflow.Ellipsis,
             )
-            Spacer(modifier = Modifier.height(2.dp))
-            val subtitle = when (item) {
-                is AlbumItem -> joinByBullet(item.artists?.joinToString { it.name }, item.year?.toString())
-                is PlaylistItem -> joinByBullet(item.author?.name, item.songCountText)
-                else -> null
-            }
-            if (subtitle != null) {
+            if (artistLine != null) {
                 Text(
-                    text = subtitle,
-                    style = MaterialTheme.typography.bodySmall,
-                    color = Color.White.copy(alpha = 0.55f),
+                    text     = artistLine,
+                    color    = Color.White.copy(alpha = 0.75f),
+                    style    = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
                 )
             }
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(5.dp),
+            ) {
+                // Heart
+                Icon(
+                    painter = painterResource(
+                        if (isLiked) R.drawable.favorite else R.drawable.favorite_border
+                    ),
+                    contentDescription = null,
+                    tint     = if (isLiked) Color(0xFFFF4D6D) else Color.White.copy(alpha = 0.6f),
+                    modifier = Modifier.size(13.dp),
+                )
+                // Explicit badge
+                if (item.explicit) {
+                    Box(
+                        modifier = Modifier
+                            .clip(RoundedCornerShape(3.dp))
+                            .background(Color.White.copy(alpha = 0.25f))
+                            .padding(horizontal = 3.dp, vertical = 1.dp),
+                    ) {
+                        Text(
+                            text  = "E",
+                            color = Color.White,
+                            style = MaterialTheme.typography.labelSmall,
+                            fontWeight = FontWeight.Bold,
+                        )
+                    }
+                }
+                // Year or song count
+                if (subtitle != null) {
+                    Text(
+                        text  = subtitle,
+                        color = Color.White.copy(alpha = 0.6f),
+                        style = MaterialTheme.typography.labelSmall,
+                    )
+                }
+            }
+        }
+
+        // Play button — bottom-right inside card
+        Box(
+            modifier = Modifier
+                .align(Alignment.BottomEnd)
+                .padding(8.dp)
+                .size(34.dp)
+                .clip(CircleShape)
+                .background(Color(0xFF1A1A1A).copy(alpha = 0.85f))
+                .border(0.6.dp, Color.White.copy(alpha = 0.2f), CircleShape),
+            contentAlignment = Alignment.Center,
+        ) {
+            Icon(
+                painter = painterResource(R.drawable.play),
+                contentDescription = null,
+                tint     = Color.White,
+                modifier = Modifier.size(14.dp),
+            )
         }
     }
 }
+
 
 @Composable
 fun YouTubeGridItem(
