@@ -1040,6 +1040,8 @@ class MainActivity : ComponentActivity() {
                             // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
+                            val glassBackdrop = rememberLayerBackdrop()
+
                             if (!showRail && currentRoute != "wrapped") {
                                 Box {
                                     BottomSheetPlayer(
@@ -1177,7 +1179,6 @@ class MainActivity : ComponentActivity() {
                                     onSearchLongClick = onRailSearchLongClick,
                                 )
                             }
-                            val glassBackdrop = rememberLayerBackdrop()
                             Box(Modifier.weight(1f).layerBackdrop(glassBackdrop)) {
                                 // NavHost with animations (Material 3 Expressive style)
                                 NavHost(
