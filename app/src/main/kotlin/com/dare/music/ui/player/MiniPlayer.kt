@@ -382,7 +382,7 @@ private fun NewMiniPlayer(
                                         val refractionHeightPx = with(density) { 20.dp.toPx() }
                                         val refractionAmountPx = with(density) { 67.dp.toPx() }
                                         val eccentricFactor = 1.0f
-                                        val dispersionIntensity = 1.0f
+                                        val dispersionIntensity = 0.0f
                                         val shaderString = """
                                             uniform shader content;
                                             uniform float2 size;
@@ -626,7 +626,7 @@ private fun NewMiniPlayerPlayButton(
                     modifier =
                         Modifier
                             .fillMaxSize()
-                            .background(Color.Black.copy(alpha = 0.4f), CircleShape),
+                            .background(Color.Black.copy(alpha = 0.4f), RoundedCornerShape(8.dp)),
                 )
                 Icon(
                     painter =
