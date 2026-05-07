@@ -55,12 +55,7 @@ import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.verticalScroll
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.automirrored.filled.QueueMusic
-import androidx.compose.material.icons.filled.ArrowBackIosNew
-import androidx.compose.material.icons.outlined.Sensors
-import androidx.compose.material.icons.outlined.Shuffle
-import androidx.compose.material3.BorderStroke
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -182,7 +177,7 @@ fun ArtistScreen(
                     onClick  = { navController.navigateUp() },
                     modifier = Modifier.align(Alignment.TopStart).statusBarsPadding().padding(4.dp),
                 ) {
-                    Icon(Icons.Default.ArrowBackIosNew, null, tint = Color.White)
+                    Icon(painterResource(R.drawable.arrow_back), null, tint = Color.White)
                 }
             }
         } else {
@@ -238,7 +233,7 @@ fun ArtistScreen(
                                 IconButton(onClick = {
                                     if (!isGuest) playerConnection.playQueue(YouTubeQueue(shuffle))
                                 }) {
-                                    Icon(Icons.Outlined.Shuffle, "Shuffle", tint = Color.White)
+                                    Icon(painterResource(R.drawable.shuffle), "Shuffle", tint = Color.White)
                                 }
                             }
                             Spacer(Modifier.weight(1f))
@@ -251,7 +246,7 @@ fun ArtistScreen(
                                     colors = ButtonDefaults.textButtonColors(contentColor = Color.White),
                                 ) {
                                     Row(verticalAlignment = Alignment.CenterVertically) {
-                                        Icon(Icons.Outlined.Sensors, "")
+                                        Icon(painterResource(R.drawable.radio), "")
                                         Spacer(Modifier.width(6.dp))
                                         Text(stringResource(R.string.radio))
                                     }
@@ -524,7 +519,7 @@ private fun XevCollapsingToolbar(
                         contentColor   = Color.White.copy(alpha = 0.6f),
                     ),
                 ) {
-                    Icon(Icons.Default.ArrowBackIosNew, "Back")
+                    Icon(painterResource(R.drawable.arrow_back), "Back")
                 }
             }
         }
@@ -652,7 +647,7 @@ private fun XevToolbar(
                     onClick  = onBack,
                     modifier = Modifier.padding(16.dp).size(24.dp),
                 ) {
-                    Icon(Icons.Default.ArrowBackIosNew, null, tint = Color.White)
+                    Icon(painterResource(R.drawable.arrow_back), null, tint = Color.White)
                 }
             },
             title  = {},
@@ -771,7 +766,7 @@ private fun XevSongRow(
                     contentAlignment = Alignment.Center,
                 ) {
                     Icon(
-                        imageVector        = Icons.AutoMirrored.Filled.QueueMusic,
+                        painter = painterResource(R.drawable.queue_music),
                         contentDescription = "Add to queue",
                         tint               = Color.White,
                     )
