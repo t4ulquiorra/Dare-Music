@@ -2,13 +2,13 @@
  * Dare Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  *
- * HomeScreen — visual architecture ported from Xevrae/SimpMusic
- * Adapted for Dare's Hilt + Android resources + existing ViewModel
+ * HomeScreen — ported from Xevrae/SimpMusic, exact feature/visual parity
  */
 package com.dare.music.ui.screens
 
 import androidx.compose.animation.AnimatedContent
 import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.Crossfade
 import androidx.compose.animation.animateColorAsState
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.expandVertically
@@ -26,32 +26,41 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
 import androidx.compose.foundation.layout.asPaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.only
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
-import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
+import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
 import androidx.compose.foundation.lazy.grid.LazyHorizontalGrid
 import androidx.compose.foundation.lazy.grid.items
 import androidx.compose.foundation.lazy.grid.rememberLazyGridState
-import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.lazy.itemsIndexed
 import androidx.compose.foundation.lazy.rememberLazyListState
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.CircleShape
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.ExperimentalMaterial3Api
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.SnackbarHostState
 import androidx.compose.material3.Text
+import androidx.compose.material3.TopAppBar
+import androidx.compose.material3.TopAppBarDefaults
+import androidx.compose.material3.pulltorefresh.PullToRefreshBox
+import androidx.compose.material3.pulltorefresh.PullToRefreshDefaults
+import androidx.compose.material3.pulltorefresh.rememberPullToRefreshState
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.State
@@ -62,11 +71,11 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
-import androidx.compose.runtime.saveable.rememberSaveable
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.hapticfeedback.HapticFeedbackType
@@ -78,6 +87,7 @@ import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
 import androidx.navigation.NavController
@@ -96,6 +106,7 @@ import com.dare.innertube.models.PodcastItem
 import com.dare.innertube.models.SongItem
 import com.dare.innertube.models.WatchEndpoint
 import com.dare.innertube.models.YTItem
+import com.dare.innertube.pages.HomePage
 import com.dare.music.LocalListenTogetherManager
 import com.dare.music.LocalPlayerAwareWindowInsets
 import com.dare.music.LocalPlayerConnection
@@ -115,23 +126,17 @@ import com.dare.music.ui.menu.YouTubePlaylistMenu
 import com.dare.music.ui.menu.YouTubeSongMenu
 import com.dare.music.viewmodels.HomeViewModel
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 
-// ── Palette ───────────────────────────────────────────────────────────────────
-private val DareBackground    = Color(0xFF000000)
-private val DareCard          = Color(0xFF1C1C1E)
-private val DareAccent        = Color(0xFF7C3AED)
-private val DareTextPrimary   = Color(0xFFFFFFFF)
-private val DareTextSecondary = Color(0xFF9CA3AF)
+// ── Sealed list entry — mirrors Xevrae's homeData list approach ───────────────
+private sealed class HomeEntry {
+    data class QuickPicksEntry(val songs: List<Song>) : HomeEntry()
+    data class SectionEntry(val section: HomePage.Section) : HomeEntry()
+}
 
-// ── Mood chips ────────────────────────────────────────────────────────────────
-private val moodChips = listOf(
-    "All", "Relax", "Sleep", "Energize", "Sad",
-    "Romance", "Feel Good", "Workout", "Party", "Commute", "Focus",
-)
-
-// ── isScrollingUp extension ───────────────────────────────────────────────────
+// ── isScrollingUp — exact Xevrae extension ────────────────────────────────────
 @Composable
 private fun androidx.compose.foundation.lazy.LazyListState.isScrollingUp(): State<Boolean> {
     var previousIndex by remember(this) { mutableIntStateOf(firstVisibleItemIndex) }
@@ -155,15 +160,28 @@ fun HomeScreen(
     snackbarHostState: SnackbarHostState,
     viewModel: HomeViewModel = hiltViewModel(),
 ) {
-    val menuState        = LocalMenuState.current
-    val playerConnection = LocalPlayerConnection.current ?: return
-    val haptic           = LocalHapticFeedback.current
-    val scope            = rememberCoroutineScope()
-    val context          = LocalContext.current
+    val coroutineScope        = rememberCoroutineScope()
+    val menuState             = LocalMenuState.current
+    val playerConnection      = LocalPlayerConnection.current ?: return
+    val haptic                = LocalHapticFeedback.current
+    val context               = LocalContext.current
+    val density               = LocalDensity.current
     val listenTogetherManager = LocalListenTogetherManager.current
     val isListenTogetherGuest = listenTogetherManager?.let { it.isInRoom && !it.isHost } ?: false
 
-    // Account dialog
+    // ── ViewModel state ───────────────────────────────────────────────────────
+    val accountName     by viewModel.accountName.collectAsState()
+    val accountImageUrl by viewModel.accountImageUrl.collectAsState()
+    val homePage        by viewModel.homePage.collectAsState()
+    val quickPicks      by viewModel.quickPicks.collectAsState()
+    val explorePage     by viewModel.explorePage.collectAsState()
+    val isLoading       by viewModel.isLoading.collectAsState()
+    val isRefreshing    by viewModel.isRefreshing.collectAsState()
+    val selectedChip    by viewModel.selectedChip.collectAsState()
+    val isPlaying       by playerConnection.isEffectivelyPlaying.collectAsState()
+    val mediaMetadata   by playerConnection.mediaMetadata.collectAsState()
+
+    // ── Account dialog ────────────────────────────────────────────────────────
     var showAccountDialog by remember { mutableStateOf(false) }
     if (showAccountDialog) {
         AccountSettingsDialog(
@@ -173,60 +191,74 @@ fun HomeScreen(
         )
     }
 
-    // Playback state
-    val isPlaying     by playerConnection.isEffectivelyPlaying.collectAsState()
-    val mediaMetadata by playerConnection.mediaMetadata.collectAsState()
-
-    // Data
-    val quickPicks           by viewModel.quickPicks.collectAsState()
-    val relatedAlbums        by viewModel.relatedAlbums.collectAsState()
-    val similarArtists       by viewModel.similarArtists.collectAsState()
-    val recommendedPlaylists by viewModel.recommendedPlaylists.collectAsState()
-    val dailyDiscover        by viewModel.dailyDiscover.collectAsState()
-
-    // Scroll
-    val scrollState  = rememberLazyListState()
+    // ── Scroll + chip row state ───────────────────────────────────────────────
+    val scrollState   = rememberLazyListState()
     val isScrollingUp by scrollState.isScrollingUp()
-    val chipRowState = rememberScrollState()
+    val chipRowState  = rememberScrollState()
 
-    // Chip selection
-    var selectedChip by rememberSaveable { mutableStateOf("All") }
+    // ── Pull to refresh ───────────────────────────────────────────────────────
+    val pullToRefreshState = rememberPullToRefreshState()
+    LaunchedEffect(isRefreshing) {
+        if (!isRefreshing) coroutineScope.launch { pullToRefreshState.animateToHidden() }
+    }
 
-    // TopAppBar height — used to push content below it
-    var topBarHeightPx by remember { mutableIntStateOf(0) }
+    // ── TopAppBar height ──────────────────────────────────────────────────────
+    var topAppBarHeightPx by remember { mutableIntStateOf(0) }
 
-    // Dominant color from first quickPick thumbnail → angled gradient header
-    var headerColor by remember { mutableStateOf(DareBackground) }
-    val animatedHeaderColor by animateColorAsState(headerColor, tween(600), label = "headerColor")
+    // ── Dominant color extraction (Xevrae's mainHomeThumbnail pattern) ────────
+    var topHeaderColor by remember { mutableStateOf(Color.Black) }
+    val animatedColor  by animateColorAsState(topHeaderColor, tween(500), label = "headerColor")
+    val mainThumbnail  = remember(quickPicks) { quickPicks?.firstOrNull()?.thumbnailUrl }
 
-    LaunchedEffect(quickPicks) {
-        val url = quickPicks?.firstOrNull()?.thumbnailUrl ?: return@LaunchedEffect
+    LaunchedEffect(mainThumbnail) {
+        val url = mainThumbnail ?: return@LaunchedEffect
         withContext(Dispatchers.IO) {
-            val req    = ImageRequest.Builder(context).data(url).size(80, 80).allowHardware(false).build()
+            val req    = ImageRequest.Builder(context).data(url).size(100, 100).allowHardware(false).build()
             val bitmap = runCatching { context.imageLoader.execute(req) }.getOrNull()?.image?.toBitmap()
             if (bitmap != null) {
                 val palette = Palette.from(bitmap).maximumColorCount(8).generate()
                 val raw     = palette.getDominantColor(0xFF000000.toInt())
-                val r       = ((raw shr 16 and 0xFF) * 0.25f) / 255f
-                val g       = ((raw shr  8 and 0xFF) * 0.25f) / 255f
-                val b       = ((raw        and 0xFF) * 0.25f) / 255f
-                withContext(Dispatchers.Main) { headerColor = Color(r, g, b, 1f) }
+                val r = ((raw shr 16 and 0xFF) * 0.3f) / 255f
+                val g = ((raw shr  8 and 0xFF) * 0.3f) / 255f
+                val b = ((raw        and 0xFF) * 0.3f) / 255f
+                withContext(Dispatchers.Main) { topHeaderColor = Color(r, g, b, 1f) }
             }
         }
     }
 
-    // ytGridItem lambda
+    // ── Pagination (Xevrae's shouldStartPaginate pattern) ────────────────────
+    val continuation = homePage?.continuation
+    val shouldStartPaginate = remember {
+        derivedStateOf {
+            continuation != null &&
+                (scrollState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >=
+                (scrollState.layoutInfo.totalItemsCount - 1)
+        }
+    }
+    LaunchedEffect(shouldStartPaginate.value) {
+        if (shouldStartPaginate.value) viewModel.loadMoreYouTubeItems(continuation)
+    }
+
+    // ── Unified list (Xevrae's homeData equivalent) ───────────────────────────
+    val allEntries: List<HomeEntry> = remember(quickPicks, homePage) {
+        buildList {
+            add(HomeEntry.QuickPicksEntry(quickPicks.orEmpty()))
+            homePage?.sections?.forEach { add(HomeEntry.SectionEntry(it)) }
+        }
+    }
+
+    // ── ytGridItem lambda ─────────────────────────────────────────────────────
     val ytGridItem: @Composable (YTItem) -> Unit = { item ->
         YouTubeGridItem(
             item           = item,
             isActive       = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
             isPlaying      = isPlaying,
-            coroutineScope = scope,
+            coroutineScope = coroutineScope,
             thumbnailRatio = 1f,
             modifier = Modifier.combinedClickable(
                 onClick = {
                     when (item) {
-                        is SongItem     -> {
+                        is SongItem -> {
                             if (!isListenTogetherGuest) playerConnection.playQueue(
                                 YouTubeQueue(item.endpoint ?: WatchEndpoint(videoId = item.id), item.toMediaMetadata())
                             )
@@ -249,7 +281,7 @@ fun HomeScreen(
                             is SongItem     -> YouTubeSongMenu(song = item, navController = navController, onDismiss = menuState::dismiss)
                             is AlbumItem    -> YouTubeAlbumMenu(albumItem = item, navController = navController, onDismiss = menuState::dismiss)
                             is ArtistItem   -> YouTubeArtistMenu(artist = item, onDismiss = menuState::dismiss)
-                            is PlaylistItem -> YouTubePlaylistMenu(playlist = item, coroutineScope = scope, onDismiss = menuState::dismiss)
+                            is PlaylistItem -> YouTubePlaylistMenu(playlist = item, coroutineScope = coroutineScope, onDismiss = menuState::dismiss)
                             else            -> {}
                         }
                     }
@@ -258,241 +290,224 @@ fun HomeScreen(
         )
     }
 
-    // ── Layout ────────────────────────────────────────────────────────────────
+    // ── Root layout ───────────────────────────────────────────────────────────
     Box {
-
-        LazyColumn(
-            state           = scrollState,
-            verticalArrangement = Arrangement.spacedBy(28.dp),
-            contentPadding  = LocalPlayerAwareWindowInsets.current
-                .only(WindowInsetsSides.Bottom)
-                .asPaddingValues(),
+        PullToRefreshBox(
+            state        = pullToRefreshState,
+            onRefresh    = { viewModel.refresh() },
+            isRefreshing = isRefreshing,
+            indicator    = {
+                PullToRefreshDefaults.Indicator(
+                    state        = pullToRefreshState,
+                    isRefreshing = isRefreshing,
+                    modifier     = Modifier
+                        .align(Alignment.TopCenter)
+                        .padding(top = with(density) { topAppBarHeightPx.toDp() }),
+                )
+            },
         ) {
-
-            // ── Gradient header + Quick Picks ──────────────────────────────
-            item {
-                Box {
-                    // Angled dominant-color gradient — fades to black
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(340.dp)
-                            .background(
-                                Brush.verticalGradient(
-                                    colorStops = arrayOf(
-                                        0.0f to animatedHeaderColor,
-                                        0.6f to animatedHeaderColor.copy(alpha = 0.6f),
-                                        1.0f to DareBackground,
+            // Xevrae's Crossfade(loading) pattern
+            Crossfade(targetState = isLoading, label = "HomeShimmer") { loading ->
+                if (!loading) {
+                    LazyColumn(
+                        state               = scrollState,
+                        verticalArrangement = Arrangement.spacedBy(28.dp),
+                        contentPadding      = LocalPlayerAwareWindowInsets.current
+                            .only(WindowInsetsSides.Bottom)
+                            .asPaddingValues(),
+                    ) {
+                        // Xevrae's itemsIndexed pattern
+                        itemsIndexed(
+                            items = allEntries,
+                            key   = { index, entry ->
+                                when (entry) {
+                                    is HomeEntry.QuickPicksEntry -> "quickpicks"
+                                    is HomeEntry.SectionEntry    -> (entry.section.title ?: "") + index
+                                }
+                            },
+                        ) { index, entry ->
+                            Box {
+                                // Gradient background — only index 0, exact Xevrae pattern
+                                if (index == 0) {
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(300.dp)
+                                            .background(
+                                                Brush.linearGradient(
+                                                    colorStops = arrayOf(
+                                                        0.0f to animatedColor,
+                                                        0.7f to animatedColor.copy(alpha = 0.5f),
+                                                        1.0f to Color.Black,
+                                                    ),
+                                                    start = Offset(0f, 0f),
+                                                    end   = Offset(Float.POSITIVE_INFINITY, Float.POSITIVE_INFINITY),
+                                                )
+                                            ),
                                     )
-                                )
-                            ),
-                    )
-                    // Extra fade to pure black at bottom of header
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(140.dp)
-                            .align(Alignment.BottomCenter)
-                            .background(
-                                Brush.verticalGradient(
-                                    listOf(Color.Transparent, Color(0xBB000000), DareBackground)
-                                )
-                            ),
-                    )
-
-                    // Content above gradient
-                    quickPicks?.takeIf { it.isNotEmpty() }?.let { songs ->
-                        Column(
-                            modifier = Modifier
-                                .padding(horizontal = 16.dp)
-                                .padding(
-                                    top = with(LocalDensity.current) { topBarHeightPx.toDp() } + 12.dp,
-                                ),
-                        ) {
-                            Text(
-                                text  = "Let's start with a radio",
-                                color = DareTextSecondary,
-                                style = MaterialTheme.typography.bodySmall,
-                            )
-                            Text(
-                                text       = "Quick Picks",
-                                color      = DareTextPrimary,
-                                style      = MaterialTheme.typography.headlineMedium,
-                                fontWeight = FontWeight.Bold,
-                                modifier   = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 6.dp),
-                            )
-                            // 4-row horizontal grid with snap — Xevrae's exact pattern
-                            val gridState = rememberLazyGridState()
-                            LazyHorizontalGrid(
-                                rows                 = GridCells.Fixed(4),
-                                modifier             = Modifier.height(256.dp),
-                                state                = gridState,
-                                horizontalArrangement = Arrangement.spacedBy(8.dp),
-                                verticalArrangement  = Arrangement.spacedBy(6.dp),
-                            ) {
-                                items(songs) { song ->
-                                    QuickPickRow(
-                                        song                  = song,
-                                        isActive              = song.id == mediaMetadata?.id,
-                                        isPlaying             = isPlaying && song.id == mediaMetadata?.id,
-                                        onClick = {
-                                            if (!isListenTogetherGuest) {
-                                                if (song.id == mediaMetadata?.id) {
-                                                    playerConnection.togglePlayPause()
-                                                } else {
-                                                    playerConnection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
-                                                }
-                                            }
-                                        },
-                                        onLongClick = {
-                                            haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                                            menuState.show {
-                                                SongMenu(
-                                                    originalSong  = song,
-                                                    navController = navController,
-                                                    onDismiss     = menuState::dismiss,
+                                    Box(
+                                        modifier = Modifier
+                                            .fillMaxWidth()
+                                            .height(180.dp)
+                                            .align(Alignment.BottomCenter)
+                                            .background(
+                                                Brush.verticalGradient(
+                                                    listOf(Color.Transparent, Color(0x75000000), Color.Black)
+                                                )
+                                            ),
+                                    )
+                                }
+                                Column(modifier = Modifier.padding(horizontal = 15.dp)) {
+                                    if (index == 0) {
+                                        Spacer(Modifier.height(with(density) { topAppBarHeightPx.toDp() }))
+                                    }
+                                    Spacer(Modifier.height(8.dp))
+                                    // Account layout — only at index 0 and only if logged in
+                                    if (index == 0 && accountName != "Guest") {
+                                        AccountLayout(accountName = accountName, url = accountImageUrl)
+                                        Spacer(Modifier.height(8.dp))
+                                    }
+                                    when (entry) {
+                                        is HomeEntry.QuickPicksEntry -> {
+                                            if (entry.songs.isNotEmpty()) {
+                                                QuickPicksSection(
+                                                    songs           = entry.songs,
+                                                    mediaMetadataId = mediaMetadata?.id,
+                                                    isPlaying       = isPlaying,
+                                                    onPlay          = { song ->
+                                                        if (!isListenTogetherGuest) {
+                                                            if (song.id == mediaMetadata?.id) {
+                                                                playerConnection.togglePlayPause()
+                                                            } else {
+                                                                playerConnection.playQueue(YouTubeQueue.radio(song.toMediaMetadata()))
+                                                            }
+                                                        }
+                                                    },
+                                                    onLongClick     = { song ->
+                                                        haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                        menuState.show {
+                                                            SongMenu(
+                                                                originalSong  = song,
+                                                                navController = navController,
+                                                                onDismiss     = menuState::dismiss,
+                                                            )
+                                                        }
+                                                    },
                                                 )
                                             }
-                                        },
-                                    )
+                                        }
+                                        is HomeEntry.SectionEntry -> {
+                                            HomeSectionItem(
+                                                section    = entry.section,
+                                                ytGridItem = ytGridItem,
+                                            )
+                                        }
+                                    }
                                 }
                             }
                         }
-                    }
-                }
-            }
 
-            // ── Made for You ──────────────────────────────────────────────
-            if (recommendedPlaylists.isNotEmpty()) {
-                item {
-                    Column(Modifier.padding(horizontal = 16.dp)) {
-                        SectionHeader(subtitle = "Curated for you", title = "Made for You")
-                        Spacer(Modifier.height(10.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(items = recommendedPlaylists, key = { it.id }) {
-                                Box(Modifier.width(160.dp)) { ytGridItem(it) }
+                        // Pagination loading indicator
+                        item {
+                            AnimatedVisibility(
+                                visible = continuation != null,
+                                enter   = expandVertically() + fadeIn(),
+                                exit    = fadeOut() + shrinkVertically(),
+                            ) {
+                                Box(
+                                    modifier         = Modifier.fillMaxWidth().height(200.dp),
+                                    contentAlignment = Alignment.Center,
+                                ) {
+                                    CircularProgressIndicator(modifier = Modifier.size(32.dp))
+                                }
                             }
                         }
-                    }
-                }
-            }
 
-            // ── New Releases ───────────────────────────────────────────────
-            if (relatedAlbums.isNotEmpty()) {
-                item {
-                    Column(Modifier.padding(horizontal = 16.dp)) {
-                        SectionHeader(subtitle = "Fresh drops", title = "New Releases")
-                        Spacer(Modifier.height(10.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(items = relatedAlbums, key = { it.id }) {
-                                Box(Modifier.width(160.dp)) { ytGridItem(it) }
+                        // New releases — shown after pagination exhausted
+                        if (continuation == null) {
+                            explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { albums ->
+                                item {
+                                    Column(Modifier.padding(horizontal = 15.dp)) {
+                                        Spacer(Modifier.height(8.dp))
+                                        Text(
+                                            text  = "Fresh drops",
+                                            style = MaterialTheme.typography.bodyMedium,
+                                            color = Color.Gray,
+                                        )
+                                        Text(
+                                            text       = "New Releases",
+                                            style      = MaterialTheme.typography.headlineMedium,
+                                            color      = Color.White,
+                                            fontWeight = FontWeight.Bold,
+                                            maxLines   = 1,
+                                            modifier   = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                        )
+                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                                            items(count = albums.size, key = { albums[it].id }) { i ->
+                                                Box(Modifier.width(160.dp)) { ytGridItem(albums[i]) }
+                                            }
+                                        }
+                                    }
+                                }
                             }
+                            item { Spacer(Modifier.height(24.dp)) }
                         }
                     }
-                }
-            }
-
-            // ── Trending Now ───────────────────────────────────────────────
-            dailyDiscover?.takeIf { it.isNotEmpty() }?.let { discover ->
-                item {
-                    Column(Modifier.padding(horizontal = 16.dp)) {
-                        SectionHeader(subtitle = "What's hot right now", title = "Trending Now")
-                        Spacer(Modifier.height(10.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(items = discover, key = { it.recommendation.id }) {
-                                Box(Modifier.width(160.dp)) { ytGridItem(it.recommendation) }
-                            }
-                        }
+                } else {
+                    // Loading shimmer
+                    Column {
+                        Spacer(Modifier.height(with(density) { topAppBarHeightPx.toDp() }))
+                        HomeShimmer()
                     }
                 }
             }
-
-            // ── Artists You Might Like ─────────────────────────────────────
-            if (similarArtists.isNotEmpty()) {
-                item {
-                    Column(Modifier.padding(horizontal = 16.dp)) {
-                        SectionHeader(subtitle = "Based on your taste", title = "Artists You Might Like")
-                        Spacer(Modifier.height(10.dp))
-                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                            items(items = similarArtists, key = { it.id }) {
-                                Box(Modifier.width(120.dp)) { ytGridItem(it) }
-                            }
-                        }
-                    }
-                }
-            }
-
-            item { Spacer(Modifier.height(24.dp)) }
         }
 
-        // ── Floating TopAppBar overlay ─────────────────────────────────────
-        // Transparent at top, blurred-dark on scroll — exactly Xevrae's pattern
+        // ── Floating TopAppBar — exact Xevrae AnimatedContent pattern ─────────
         AnimatedContent(
-            targetState = scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0,
-            transitionSpec = { fadeIn(tween(250)).togetherWith(fadeOut(tween(250))) },
-            label = "topBarBg",
-            modifier = Modifier
+            targetState    = scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0,
+            transitionSpec = { fadeIn(tween(300)).togetherWith(fadeOut(tween(300))) },
+            label          = "topBarBg",
+            modifier       = Modifier
                 .align(Alignment.TopCenter)
-                .onGloballyPositioned { topBarHeightPx = it.size.height },
+                .onGloballyPositioned { topAppBarHeightPx = it.size.height },
         ) { atTop ->
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .background(
-                        if (atTop) Color.Transparent
-                        else Color.Black.copy(alpha = 0.75f)
-                    ),
+                    .background(if (atTop) Color.Transparent else Color.Black.copy(alpha = 0.75f)),
             ) {
-                // TopAppBar: hides when scrolling DOWN, reappears scrolling UP
+                // Hides on scroll down, shows on scroll up
                 AnimatedVisibility(
                     visible = isScrollingUp,
                     enter   = fadeIn() + expandVertically(),
                     exit    = fadeOut() + shrinkVertically(),
                 ) {
-                    HomeTopBar(
-                        onAccountClick = { showAccountDialog = true },
-                        navController  = navController,
-                    )
+                    HomeTopBar(onAccountClick = { showAccountDialog = true }, navController = navController)
                 }
-                // Status bar spacer when TopAppBar is hidden
                 AnimatedVisibility(
                     visible = !isScrollingUp,
                     enter   = fadeIn() + expandVertically(),
                     exit    = fadeOut() + shrinkVertically(),
                 ) {
-                    Spacer(
-                        Modifier
-                            .fillMaxWidth()
-                            .statusBarsPadding(),
-                    )
+                    Spacer(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars))
                 }
-                // Chip row — always visible, scrollable
-                Row(
-                    modifier = Modifier
-                        .horizontalScroll(chipRowState)
-                        .padding(vertical = 8.dp, horizontal = 16.dp),
-                    horizontalArrangement = Arrangement.spacedBy(6.dp),
-                ) {
-                    moodChips.forEach { chip ->
-                        val isSelected = chip == selectedChip
-                        Box(
-                            modifier = Modifier
-                                .clip(RoundedCornerShape(50))
-                                .background(
-                                    if (isSelected) DareAccent
-                                    else DareCard.copy(alpha = 0.85f)
-                                )
-                                .clickable { selectedChip = chip }
-                                .padding(horizontal = 16.dp, vertical = 7.dp),
-                        ) {
-                            Text(
-                                text       = chip,
-                                color      = DareTextPrimary,
-                                style      = MaterialTheme.typography.labelLarge,
-                                fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
-                            )
+                // Chip row — real API chips, functional
+                val chips = homePage?.chips
+                if (!chips.isNullOrEmpty()) {
+                    Row(
+                        modifier = Modifier
+                            .horizontalScroll(chipRowState)
+                            .padding(vertical = 8.dp, horizontal = 15.dp),
+                        horizontalArrangement = Arrangement.spacedBy(4.dp),
+                    ) {
+                        HomeChip(text = "All", isSelected = selectedChip == null, isLoading = isLoading) {
+                            viewModel.toggleChip(null)
+                        }
+                        chips.forEach { chip ->
+                            HomeChip(text = chip.title, isSelected = chip == selectedChip, isLoading = isLoading) {
+                                viewModel.toggleChip(chip)
+                            }
                         }
                     }
                 }
@@ -501,13 +516,10 @@ fun HomeScreen(
     }
 }
 
-// ── Helper composables ────────────────────────────────────────────────────────
-
+// ── HomeTopBar — Xevrae's HomeTopAppBar ──────────────────────────────────────
+@OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar(
-    onAccountClick: () -> Unit,
-    navController: NavController,
-) {
+private fun HomeTopBar(onAccountClick: () -> Unit, navController: NavController) {
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
     val greeting = when (hour) {
         in 6..12  -> "Good morning"
@@ -515,106 +527,125 @@ private fun HomeTopBar(
         in 18..23 -> "Good evening"
         else      -> "Good night"
     }
-    Row(
-        modifier = Modifier
-            .fillMaxWidth()
-            .statusBarsPadding()
-            .padding(horizontal = 16.dp, vertical = 8.dp),
-        horizontalArrangement = Arrangement.SpaceBetween,
-        verticalAlignment     = Alignment.CenterVertically,
-    ) {
-        Column {
-            Text(
-                text       = "Dare",
-                style      = MaterialTheme.typography.titleMedium,
-                color      = DareTextPrimary,
-                fontWeight = FontWeight.Bold,
-            )
-            Text(
-                text  = greeting,
-                style = MaterialTheme.typography.bodySmall,
-                color = DareTextSecondary,
-            )
-        }
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+    TopAppBar(
+        windowInsets = TopAppBarDefaults.windowInsets,
+        title = {
+            Column {
+                Text(text = "Dare", style = MaterialTheme.typography.titleMedium, color = Color.White, modifier = Modifier.padding(bottom = 2.dp))
+                Text(text = greeting, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+            }
+        },
+        actions = {
             IconButton(onClick = { navController.navigate("history") }) {
-                Icon(painterResource(R.drawable.history), contentDescription = null, tint = DareTextSecondary)
+                Icon(painterResource(R.drawable.history), null, tint = Color.White)
             }
             IconButton(onClick = { navController.navigate("settings") }) {
-                Icon(painterResource(R.drawable.settings), contentDescription = null, tint = DareTextSecondary)
+                Icon(painterResource(R.drawable.settings), null, tint = Color.White)
             }
-            Box(
-                modifier = Modifier
-                    .size(36.dp)
-                    .clip(CircleShape)
-                    .background(DareCard)
-                    .clickable(onClick = onAccountClick),
-                contentAlignment = Alignment.Center,
-            ) {
-                Icon(
-                    painter = painterResource(R.drawable.account),
-                    contentDescription = null,
-                    tint     = DareTextSecondary,
-                    modifier = Modifier.size(20.dp),
+            IconButton(onClick = onAccountClick) {
+                Icon(painterResource(R.drawable.account), null, tint = Color.White)
+            }
+        },
+        colors = TopAppBarDefaults.topAppBarColors(containerColor = Color.Transparent),
+    )
+}
+
+// ── AccountLayout — exact Xevrae port ────────────────────────────────────────
+@Composable
+private fun AccountLayout(accountName: String, url: String?) {
+    val context = LocalContext.current
+    Column {
+        Text(text = "Welcome back", style = MaterialTheme.typography.bodyMedium, color = Color.White, modifier = Modifier.padding(bottom = 3.dp))
+        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp)) {
+            AsyncImage(
+                model              = ImageRequest.Builder(context).data(url).crossfade(true).build(),
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier.size(40.dp).clip(CircleShape),
+            )
+            Text(text = accountName, style = MaterialTheme.typography.headlineMedium, color = Color.White, modifier = Modifier.padding(start = 8.dp))
+        }
+    }
+}
+
+// ── QuickPicksSection — Xevrae's QuickPicks composable ───────────────────────
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun QuickPicksSection(
+    songs: List<Song>,
+    mediaMetadataId: String?,
+    isPlaying: Boolean,
+    onPlay: (Song) -> Unit,
+    onLongClick: (Song) -> Unit,
+) {
+    val density = LocalDensity.current
+    var widthDp by remember { mutableStateOf(0.dp) }
+
+    Column(
+        Modifier
+            .padding(vertical = 8.dp)
+            .onGloballyPositioned { widthDp = with(density) { it.size.width.toDp() } },
+    ) {
+        Text(text = "Let's start with a radio", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
+        Text(
+            text       = "Quick Picks",
+            style      = MaterialTheme.typography.headlineMedium,
+            color      = Color.White,
+            fontWeight = FontWeight.Bold,
+            maxLines   = 1,
+            modifier   = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        )
+        LazyHorizontalGrid(
+            rows                  = GridCells.Fixed(4),
+            modifier              = Modifier.height(256.dp),
+            state                 = rememberLazyGridState(),
+            horizontalArrangement = Arrangement.spacedBy(0.dp),
+        ) {
+            items(songs, key = { it.id }) { song ->
+                QuickPicksItem(
+                    song            = song,
+                    isActive        = song.id == mediaMetadataId,
+                    isPlaying       = isPlaying && song.id == mediaMetadataId,
+                    widthDp         = widthDp / 2,
+                    onClick         = { onPlay(song) },
+                    onLongClick     = { onLongClick(song) },
                 )
             }
         }
     }
 }
 
-@Composable
-private fun SectionHeader(subtitle: String, title: String) {
-    Text(
-        text  = subtitle,
-        color = DareTextSecondary,
-        style = MaterialTheme.typography.bodySmall,
-    )
-    Text(
-        text       = title,
-        color      = DareTextPrimary,
-        style      = MaterialTheme.typography.headlineSmall,
-        fontWeight = FontWeight.Bold,
-        modifier   = Modifier
-            .fillMaxWidth()
-            .padding(vertical = 4.dp),
-    )
-}
-
+// ── QuickPicksItem ────────────────────────────────────────────────────────────
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun QuickPickRow(
+private fun QuickPicksItem(
     song: Song,
     isActive: Boolean,
     isPlaying: Boolean,
+    widthDp: Dp,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
     val context = LocalContext.current
     Row(
         modifier = Modifier
-            .width(220.dp)
-            .clip(RoundedCornerShape(10.dp))
-            .background(DareCard.copy(alpha = 0.75f))
+            .width(widthDp)
+            .clip(RoundedCornerShape(8.dp))
             .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(8.dp),
+            .padding(6.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
         AsyncImage(
-            model = ImageRequest.Builder(context)
-                .data(song.thumbnailUrl)
-                .crossfade(true)
-                .build(),
+            model              = ImageRequest.Builder(context).data(song.thumbnailUrl).crossfade(true).build(),
             contentDescription = null,
-            modifier = Modifier
-                .size(44.dp)
-                .clip(RoundedCornerShape(6.dp)),
-            contentScale = ContentScale.Crop,
+            modifier           = Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)),
+            contentScale       = ContentScale.Crop,
         )
-        Spacer(Modifier.width(10.dp))
+        Spacer(Modifier.width(8.dp))
         Column(Modifier.weight(1f)) {
             Text(
                 text       = song.title,
-                color      = if (isActive) DareAccent else DareTextPrimary,
+                color      = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
                 style      = MaterialTheme.typography.bodySmall,
                 fontWeight = FontWeight.SemiBold,
                 maxLines   = 1,
@@ -622,20 +653,75 @@ private fun QuickPickRow(
             )
             Text(
                 text     = song.artists.joinToString { it.name },
-                color    = DareTextSecondary,
+                color    = Color.Gray,
                 style    = MaterialTheme.typography.labelSmall,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
         }
-        if (isActive) {
-            Spacer(Modifier.width(6.dp))
-            Icon(
-                painter = painterResource(if (isPlaying) R.drawable.pause else R.drawable.play),
-                contentDescription = null,
-                tint     = DareAccent,
-                modifier = Modifier.size(16.dp),
-            )
+    }
+}
+
+// ── HomeSectionItem — renders one HomePage.Section ───────────────────────────
+@Composable
+private fun HomeSectionItem(section: HomePage.Section, ytGridItem: @Composable (YTItem) -> Unit) {
+    if (section.items.isEmpty()) return
+    val title = section.title ?: return
+    Column(Modifier.padding(vertical = 8.dp)) {
+        Text(
+            text       = title,
+            style      = MaterialTheme.typography.headlineMedium,
+            color      = Color.White,
+            fontWeight = FontWeight.Bold,
+            maxLines   = 1,
+            modifier   = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        )
+        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+            items(count = section.items.size, key = { section.items[it].id + it }) { i ->
+                Box(Modifier.width(160.dp)) { ytGridItem(section.items[i]) }
+            }
+        }
+    }
+}
+
+// ── HomeChip ──────────────────────────────────────────────────────────────────
+@Composable
+private fun HomeChip(text: String, isSelected: Boolean, isLoading: Boolean, onClick: () -> Unit) {
+    Box(
+        modifier = Modifier
+            .clip(RoundedCornerShape(50))
+            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f))
+            .clickable(enabled = !isLoading, onClick = onClick)
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
+        Text(
+            text       = text,
+            color      = Color.White,
+            style      = MaterialTheme.typography.labelLarge,
+            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+        )
+    }
+}
+
+// ── HomeShimmer ───────────────────────────────────────────────────────────────
+@Composable
+private fun HomeShimmer() {
+    Column(
+        modifier            = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
+        verticalArrangement = Arrangement.spacedBy(20.dp),
+    ) {
+        Spacer(Modifier.height(8.dp))
+        Box(Modifier.fillMaxWidth(0.4f).height(20.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.08f)))
+        Box(Modifier.fillMaxWidth().height(256.dp).clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.05f)))
+        repeat(3) {
+            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
+                Box(Modifier.width(120.dp).height(18.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.08f)))
+                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+                    repeat(3) {
+                        Box(Modifier.width(160.dp).height(160.dp).clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.05f)))
+                    }
+                }
+            }
         }
     }
 }
