@@ -754,7 +754,7 @@ private fun DareHomeItem(
         ) {
             if (section.label != null) {
                 Text(
-                    text  = section.label,
+                    text  = section.label!!,
                     style = MaterialTheme.typography.bodySmall,
                     color = Color.Gray,
                 )
