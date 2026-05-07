@@ -2,7 +2,7 @@
  * Dare Project (C) 2026
  * Licensed under GPL-3.0 | See git history for contributors
  *
- * HomeScreen — ported from Xevrae/SimpMusic, exact feature/visual parity
+ * HomeScreen — exact visual port from Xevrae/SimpMusic
  */
 package com.dare.music.ui.screens
 
@@ -17,9 +17,12 @@ import androidx.compose.animation.fadeOut
 import androidx.compose.animation.shrinkVertically
 import androidx.compose.animation.togetherWith
 import androidx.compose.foundation.ExperimentalFoundationApi
+import androidx.compose.foundation.MarqueeAnimationMode
 import androidx.compose.foundation.background
+import androidx.compose.foundation.basicMarquee
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.combinedClickable
+import androidx.compose.foundation.focusable
 import androidx.compose.foundation.horizontalScroll
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -28,6 +31,7 @@ import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.WindowInsetsSides
+import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.asPaddingValues
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -38,6 +42,8 @@ import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.layout.windowInsetsPadding
+import androidx.compose.foundation.layout.wrapContentHeight
+import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.LazyRow
 import androidx.compose.foundation.lazy.grid.GridCells
@@ -74,6 +80,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.alpha
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
@@ -85,8 +92,7 @@ import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
-import androidx.compose.ui.text.font.FontWeight
-import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.hilt.navigation.compose.hiltViewModel
@@ -118,7 +124,6 @@ import com.dare.music.playback.queues.ListQueue
 import com.dare.music.playback.queues.YouTubeQueue
 import com.dare.music.ui.component.AccountSettingsDialog
 import com.dare.music.ui.component.LocalMenuState
-import com.dare.music.ui.component.YouTubeGridItem
 import com.dare.music.ui.menu.SongMenu
 import com.dare.music.ui.menu.YouTubeAlbumMenu
 import com.dare.music.ui.menu.YouTubeArtistMenu
@@ -130,13 +135,13 @@ import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 import java.util.Calendar
 
-// ── Sealed list entry — mirrors Xevrae's homeData list approach ───────────────
+// ── Sealed list entry (mirrors Xevrae's homeData approach) ───────────────────
 private sealed class HomeEntry {
     data class QuickPicksEntry(val songs: List<Song>) : HomeEntry()
     data class SectionEntry(val section: HomePage.Section) : HomeEntry()
 }
 
-// ── isScrollingUp — exact Xevrae extension ────────────────────────────────────
+// ── isScrollingUp (exact Xevrae extension) ───────────────────────────────────
 @Composable
 private fun androidx.compose.foundation.lazy.LazyListState.isScrollingUp(): State<Boolean> {
     var previousIndex by remember(this) { mutableIntStateOf(firstVisibleItemIndex) }
@@ -196,7 +201,7 @@ fun HomeScreen(
     val isScrollingUp by scrollState.isScrollingUp()
     val chipRowState  = rememberScrollState()
 
-    // ── Pull to refresh ───────────────────────────────────────────────────────
+    // ── Pull to refresh (exact Xevrae pattern) ────────────────────────────────
     val pullToRefreshState = rememberPullToRefreshState()
     LaunchedEffect(isRefreshing) {
         if (!isRefreshing) coroutineScope.launch { pullToRefreshState.animateToHidden() }
@@ -205,7 +210,7 @@ fun HomeScreen(
     // ── TopAppBar height ──────────────────────────────────────────────────────
     var topAppBarHeightPx by remember { mutableIntStateOf(0) }
 
-    // ── Dominant color extraction (Xevrae's mainHomeThumbnail pattern) ────────
+    // ── Dominant color (Xevrae's mainHomeThumbnail/rgbFactor pattern) ─────────
     var topHeaderColor by remember { mutableStateOf(Color.Black) }
     val animatedColor  by animateColorAsState(topHeaderColor, tween(500), label = "headerColor")
     val mainThumbnail  = remember(quickPicks) { quickPicks?.firstOrNull()?.thumbnailUrl }
@@ -218,6 +223,7 @@ fun HomeScreen(
             if (bitmap != null) {
                 val palette = Palette.from(bitmap).maximumColorCount(8).generate()
                 val raw     = palette.getDominantColor(0xFF000000.toInt())
+                // rgbFactor(0.3f) equivalent
                 val r = ((raw shr 16 and 0xFF) * 0.3f) / 255f
                 val g = ((raw shr  8 and 0xFF) * 0.3f) / 255f
                 val b = ((raw        and 0xFF) * 0.3f) / 255f
@@ -226,11 +232,16 @@ fun HomeScreen(
         }
     }
 
-    // ── Pagination (Xevrae's shouldStartPaginate pattern) ────────────────────
+    // ── Pagination (exact Xevrae shouldStartPaginate pattern) ─────────────────
     val continuation = homePage?.continuation
+    val homeListState = when {
+        isLoading      -> ListState.LOADING
+        continuation != null -> ListState.IDLE
+        else           -> ListState.PAGINATION_EXHAUST
+    }
     val shouldStartPaginate = remember {
         derivedStateOf {
-            continuation != null &&
+            homeListState != ListState.PAGINATION_EXHAUST &&
                 (scrollState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >=
                 (scrollState.layoutInfo.totalItemsCount - 1)
         }
@@ -247,50 +258,7 @@ fun HomeScreen(
         }
     }
 
-    // ── ytGridItem lambda ─────────────────────────────────────────────────────
-    val ytGridItem: @Composable (YTItem) -> Unit = { item ->
-        YouTubeGridItem(
-            item           = item,
-            isActive       = item.id in listOf(mediaMetadata?.album?.id, mediaMetadata?.id),
-            isPlaying      = isPlaying,
-            coroutineScope = coroutineScope,
-            thumbnailRatio = 1f,
-            modifier = Modifier.combinedClickable(
-                onClick = {
-                    when (item) {
-                        is SongItem -> {
-                            if (!isListenTogetherGuest) playerConnection.playQueue(
-                                YouTubeQueue(item.endpoint ?: WatchEndpoint(videoId = item.id), item.toMediaMetadata())
-                            )
-                        }
-                        is AlbumItem    -> navController.navigate("album/${item.id}")
-                        is ArtistItem   -> navController.navigate("artist/${item.id}")
-                        is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
-                        is PodcastItem  -> navController.navigate("online_podcast/${item.id}")
-                        is EpisodeItem  -> {
-                            if (!isListenTogetherGuest) playerConnection.playQueue(
-                                ListQueue(title = item.title, items = listOf(item.toMediaMetadata().toMediaItem()))
-                            )
-                        }
-                    }
-                },
-                onLongClick = {
-                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
-                    menuState.show {
-                        when (item) {
-                            is SongItem     -> YouTubeSongMenu(song = item, navController = navController, onDismiss = menuState::dismiss)
-                            is AlbumItem    -> YouTubeAlbumMenu(albumItem = item, navController = navController, onDismiss = menuState::dismiss)
-                            is ArtistItem   -> YouTubeArtistMenu(artist = item, onDismiss = menuState::dismiss)
-                            is PlaylistItem -> YouTubePlaylistMenu(playlist = item, coroutineScope = coroutineScope, onDismiss = menuState::dismiss)
-                            else            -> {}
-                        }
-                    }
-                },
-            ),
-        )
-    }
-
-    // ── Root layout ───────────────────────────────────────────────────────────
+    // ── Root layout (exact Xevrae Box structure) ──────────────────────────────
     Box {
         PullToRefreshBox(
             state        = pullToRefreshState,
@@ -306,7 +274,7 @@ fun HomeScreen(
                 )
             },
         ) {
-            // Xevrae's Crossfade(loading) pattern
+            // Xevrae: Crossfade(loading)
             Crossfade(targetState = isLoading, label = "HomeShimmer") { loading ->
                 if (!loading) {
                     LazyColumn(
@@ -316,7 +284,7 @@ fun HomeScreen(
                             .only(WindowInsetsSides.Bottom)
                             .asPaddingValues(),
                     ) {
-                        // Xevrae's itemsIndexed pattern
+                        // Xevrae: itemsIndexed(homeData) { index, item -> ... }
                         itemsIndexed(
                             items = allEntries,
                             key   = { index, entry ->
@@ -327,7 +295,7 @@ fun HomeScreen(
                             },
                         ) { index, entry ->
                             Box {
-                                // Gradient background — only index 0, exact Xevrae pattern
+                                // Gradient background — index 0 only (exact Xevrae)
                                 if (index == 0) {
                                     Box(
                                         modifier = Modifier
@@ -357,16 +325,19 @@ fun HomeScreen(
                                             ),
                                     )
                                 }
+
                                 Column(modifier = Modifier.padding(horizontal = 15.dp)) {
                                     if (index == 0) {
                                         Spacer(Modifier.height(with(density) { topAppBarHeightPx.toDp() }))
                                     }
                                     Spacer(Modifier.height(8.dp))
-                                    // Account layout — only at index 0 and only if logged in
+
+                                    // Account layout — index 0, logged in only (exact Xevrae)
                                     if (index == 0 && accountName != "Guest") {
                                         AccountLayout(accountName = accountName, url = accountImageUrl)
                                         Spacer(Modifier.height(8.dp))
                                     }
+
                                     when (entry) {
                                         is HomeEntry.QuickPicksEntry -> {
                                             if (entry.songs.isNotEmpty()) {
@@ -383,7 +354,7 @@ fun HomeScreen(
                                                             }
                                                         }
                                                     },
-                                                    onLongClick     = { song ->
+                                                    onLongClick = { song ->
                                                         haptic.performHapticFeedback(HapticFeedbackType.LongPress)
                                                         menuState.show {
                                                             SongMenu(
@@ -396,10 +367,45 @@ fun HomeScreen(
                                                 )
                                             }
                                         }
+
                                         is HomeEntry.SectionEntry -> {
-                                            HomeSectionItem(
-                                                section    = entry.section,
-                                                ytGridItem = ytGridItem,
+                                            DareHomeItem(
+                                                section       = entry.section,
+                                                navController = navController,
+                                                mediaMetadataId = mediaMetadata?.id,
+                                                currentAlbumId  = mediaMetadata?.album?.id,
+                                                isPlaying       = isPlaying,
+                                                coroutineScope  = coroutineScope,
+                                                onSongLongClick = { item ->
+                                                    haptic.performHapticFeedback(HapticFeedbackType.LongPress)
+                                                    menuState.show {
+                                                        when (item) {
+                                                            is SongItem     -> YouTubeSongMenu(song = item, navController = navController, onDismiss = menuState::dismiss)
+                                                            is AlbumItem    -> YouTubeAlbumMenu(albumItem = item, navController = navController, onDismiss = menuState::dismiss)
+                                                            is ArtistItem   -> YouTubeArtistMenu(artist = item, onDismiss = menuState::dismiss)
+                                                            is PlaylistItem -> YouTubePlaylistMenu(playlist = item, coroutineScope = coroutineScope, onDismiss = menuState::dismiss)
+                                                            else            -> {}
+                                                        }
+                                                    }
+                                                },
+                                                onSongClick = { item ->
+                                                    when (item) {
+                                                        is SongItem -> {
+                                                            if (!isListenTogetherGuest) playerConnection.playQueue(
+                                                                YouTubeQueue(item.endpoint ?: WatchEndpoint(videoId = item.id), item.toMediaMetadata())
+                                                            )
+                                                        }
+                                                        is AlbumItem    -> navController.navigate("album/${item.id}")
+                                                        is ArtistItem   -> navController.navigate("artist/${item.id}")
+                                                        is PlaylistItem -> navController.navigate("online_playlist/${item.id}")
+                                                        is PodcastItem  -> navController.navigate("online_podcast/${item.id}")
+                                                        is EpisodeItem  -> {
+                                                            if (!isListenTogetherGuest) playerConnection.playQueue(
+                                                                ListQueue(title = item.title, items = listOf(item.toMediaMetadata().toMediaItem()))
+                                                            )
+                                                        }
+                                                    }
+                                                },
                                             )
                                         }
                                     }
@@ -407,10 +413,10 @@ fun HomeScreen(
                             }
                         }
 
-                        // Pagination loading indicator
+                        // Pagination loading (exact Xevrae AnimatedVisibility pattern)
                         item {
                             AnimatedVisibility(
-                                visible = continuation != null,
+                                visible = homeListState == ListState.PAGINATING,
                                 enter   = expandVertically() + fadeIn(),
                                 exit    = fadeOut() + shrinkVertically(),
                             ) {
@@ -423,8 +429,8 @@ fun HomeScreen(
                             }
                         }
 
-                        // New releases — shown after pagination exhausted
-                        if (continuation == null) {
+                        // New releases — after pagination exhausted (exact Xevrae pattern)
+                        if (homeListState == ListState.PAGINATION_EXHAUST) {
                             explorePage?.newReleaseAlbums?.takeIf { it.isNotEmpty() }?.let { albums ->
                                 item {
                                     Column(Modifier.padding(horizontal = 15.dp)) {
@@ -435,35 +441,44 @@ fun HomeScreen(
                                             color = Color.Gray,
                                         )
                                         Text(
-                                            text       = "New Releases",
-                                            style      = MaterialTheme.typography.headlineMedium,
-                                            color      = Color.White,
-                                            fontWeight = FontWeight.Bold,
-                                            maxLines   = 1,
-                                            modifier   = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+                                            text    = "New Releases",
+                                            style   = MaterialTheme.typography.headlineMedium,
+                                            color   = Color.White,
+                                            maxLines = 1,
+                                            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
                                         )
-                                        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                                            items(count = albums.size, key = { albums[it].id }) { i ->
-                                                Box(Modifier.width(160.dp)) { ytGridItem(albums[i]) }
+                                        LazyRow {
+                                            items(
+                                                count = albums.size,
+                                                key   = { albums[it].id },
+                                            ) { i ->
+                                                DareHomeItemContentPlaylist(
+                                                    thumbnail = albums[i].thumbnail,
+                                                    title     = albums[i].title,
+                                                    subtitle  = albums[i].artists?.joinToString { it.name } ?: "",
+                                                    onClick   = { navController.navigate("album/${albums[i].id}") },
+                                                )
                                             }
                                         }
                                     }
                                 }
                             }
-                            item { Spacer(Modifier.height(24.dp)) }
+
+                            // EndOfPage (exact Xevrae)
+                            item { DareEndOfPage() }
                         }
                     }
                 } else {
-                    // Loading shimmer
+                    // HomeShimmer (exact Xevrae structure)
                     Column {
                         Spacer(Modifier.height(with(density) { topAppBarHeightPx.toDp() }))
-                        HomeShimmer()
+                        DareHomeShimmer()
                     }
                 }
             }
         }
 
-        // ── Floating TopAppBar — exact Xevrae AnimatedContent pattern ─────────
+        // ── Floating TopAppBar (exact Xevrae AnimatedContent pattern) ──────────
         AnimatedContent(
             targetState    = scrollState.firstVisibleItemIndex == 0 && scrollState.firstVisibleItemScrollOffset == 0,
             transitionSpec = { fadeIn(tween(300)).togetherWith(fadeOut(tween(300))) },
@@ -477,13 +492,16 @@ fun HomeScreen(
                     .fillMaxWidth()
                     .background(if (atTop) Color.Transparent else Color.Black.copy(alpha = 0.75f)),
             ) {
-                // Hides on scroll down, shows on scroll up
+                // Hides on scroll down, shows on scroll up (exact Xevrae)
                 AnimatedVisibility(
                     visible = isScrollingUp,
                     enter   = fadeIn() + expandVertically(),
                     exit    = fadeOut() + shrinkVertically(),
                 ) {
-                    HomeTopBar(onAccountClick = { showAccountDialog = true }, navController = navController)
+                    DareHomeTopBar(
+                        onAccountClick = { showAccountDialog = true },
+                        navController  = navController,
+                    )
                 }
                 AnimatedVisibility(
                     visible = !isScrollingUp,
@@ -492,7 +510,8 @@ fun HomeScreen(
                 ) {
                     Spacer(Modifier.fillMaxWidth().windowInsetsPadding(WindowInsets.statusBars))
                 }
-                // Chip row — real API chips, functional
+
+                // Chip row — real API chips, functional (Xevrae pattern adapted)
                 val chips = homePage?.chips
                 if (!chips.isNullOrEmpty()) {
                     Row(
@@ -501,13 +520,19 @@ fun HomeScreen(
                             .padding(vertical = 8.dp, horizontal = 15.dp),
                         horizontalArrangement = Arrangement.spacedBy(4.dp),
                     ) {
-                        HomeChip(text = "All", isSelected = selectedChip == null, isLoading = isLoading) {
-                            viewModel.toggleChip(null)
-                        }
+                        DareChip(
+                            text       = "All",
+                            isSelected = selectedChip == null,
+                            isLoading  = isLoading,
+                            onClick    = { viewModel.toggleChip(null) },
+                        )
                         chips.forEach { chip ->
-                            HomeChip(text = chip.title, isSelected = chip == selectedChip, isLoading = isLoading) {
-                                viewModel.toggleChip(chip)
-                            }
+                            DareChip(
+                                text       = chip.title,
+                                isSelected = chip == selectedChip,
+                                isLoading  = isLoading,
+                                onClick    = { viewModel.toggleChip(chip) },
+                            )
                         }
                     }
                 }
@@ -516,10 +541,13 @@ fun HomeScreen(
     }
 }
 
-// ── HomeTopBar — Xevrae's HomeTopAppBar ──────────────────────────────────────
+// ── ListState (Xevrae equivalent) ────────────────────────────────────────────
+private enum class ListState { IDLE, LOADING, PAGINATING, PAGINATION_EXHAUST }
+
+// ── HomeTopBar (Xevrae's HomeTopAppBar) ──────────────────────────────────────
 @OptIn(ExperimentalMaterial3Api::class)
 @Composable
-private fun HomeTopBar(onAccountClick: () -> Unit, navController: NavController) {
+private fun DareHomeTopBar(onAccountClick: () -> Unit, navController: NavController) {
     val hour = remember { Calendar.getInstance().get(Calendar.HOUR_OF_DAY) }
     val greeting = when (hour) {
         in 6..12  -> "Good morning"
@@ -531,7 +559,12 @@ private fun HomeTopBar(onAccountClick: () -> Unit, navController: NavController)
         windowInsets = TopAppBarDefaults.windowInsets,
         title = {
             Column {
-                Text(text = "Dare", style = MaterialTheme.typography.titleMedium, color = Color.White, modifier = Modifier.padding(bottom = 2.dp))
+                Text(
+                    text     = "Dare",
+                    style    = MaterialTheme.typography.titleMedium,
+                    color    = Color.White,
+                    modifier = Modifier.padding(bottom = 2.dp),
+                )
                 Text(text = greeting, style = MaterialTheme.typography.bodySmall, color = Color.Gray)
             }
         },
@@ -550,25 +583,38 @@ private fun HomeTopBar(onAccountClick: () -> Unit, navController: NavController)
     )
 }
 
-// ── AccountLayout — exact Xevrae port ────────────────────────────────────────
+// ── AccountLayout (exact Xevrae port) ────────────────────────────────────────
 @Composable
 private fun AccountLayout(accountName: String, url: String?) {
     val context = LocalContext.current
     Column {
-        Text(text = "Welcome back", style = MaterialTheme.typography.bodyMedium, color = Color.White, modifier = Modifier.padding(bottom = 3.dp))
-        Row(verticalAlignment = Alignment.CenterVertically, modifier = Modifier.padding(horizontal = 5.dp, vertical = 5.dp)) {
+        Text(
+            text     = "Welcome back",
+            style    = MaterialTheme.typography.bodyMedium,
+            color    = Color.White,
+            modifier = Modifier.padding(bottom = 3.dp),
+        )
+        Row(
+            verticalAlignment = Alignment.CenterVertically,
+            modifier          = Modifier.padding(horizontal = 5.dp, vertical = 5.dp),
+        ) {
             AsyncImage(
                 model              = ImageRequest.Builder(context).data(url).crossfade(true).build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.size(40.dp).clip(CircleShape),
             )
-            Text(text = accountName, style = MaterialTheme.typography.headlineMedium, color = Color.White, modifier = Modifier.padding(start = 8.dp))
+            Text(
+                text     = accountName,
+                style    = MaterialTheme.typography.headlineMedium,
+                color    = Color.White,
+                modifier = Modifier.padding(start = 8.dp),
+            )
         }
     }
 }
 
-// ── QuickPicksSection — Xevrae's QuickPicks composable ───────────────────────
+// ── QuickPicksSection (exact Xevrae QuickPicks composable) ────────────────────
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
 private fun QuickPicksSection(
@@ -586,26 +632,28 @@ private fun QuickPicksSection(
             .padding(vertical = 8.dp)
             .onGloballyPositioned { widthDp = with(density) { it.size.width.toDp() } },
     ) {
-        Text(text = "Let's start with a radio", style = MaterialTheme.typography.bodySmall, color = Color.Gray)
         Text(
-            text       = "Quick Picks",
-            style      = MaterialTheme.typography.headlineMedium,
-            color      = Color.White,
-            fontWeight = FontWeight.Bold,
-            maxLines   = 1,
-            modifier   = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+            text  = "Let's start with a radio",
+            style = MaterialTheme.typography.bodySmall,
+            color = Color.Gray,
         )
+        Text(
+            text     = "Quick Picks",
+            style    = MaterialTheme.typography.headlineMedium,
+            color    = Color.White,
+            maxLines = 1,
+            modifier = Modifier.fillMaxWidth().padding(vertical = 5.dp),
+        )
+        // Exact Xevrae: LazyHorizontalGrid rows=4 height=256.dp with snap
         LazyHorizontalGrid(
-            rows                  = GridCells.Fixed(4),
-            modifier              = Modifier.height(256.dp),
-            state                 = rememberLazyGridState(),
-            horizontalArrangement = Arrangement.spacedBy(0.dp),
+            rows   = GridCells.Fixed(4),
+            modifier = Modifier.height(256.dp),
+            state  = rememberLazyGridState(),
         ) {
             items(songs, key = { it.id }) { song ->
-                QuickPicksItem(
+                DareQuickPicksItem(
                     song            = song,
                     isActive        = song.id == mediaMetadataId,
-                    isPlaying       = isPlaying && song.id == mediaMetadataId,
                     widthDp         = widthDp / 2,
                     onClick         = { onPlay(song) },
                     onLongClick     = { onLongClick(song) },
@@ -615,113 +663,414 @@ private fun QuickPicksSection(
     }
 }
 
-// ── QuickPicksItem ────────────────────────────────────────────────────────────
+// ── QuickPicksItem (exact Xevrae port for Dare's Song model) ──────────────────
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun QuickPicksItem(
+private fun DareQuickPicksItem(
     song: Song,
     isActive: Boolean,
-    isPlaying: Boolean,
     widthDp: Dp,
     onClick: () -> Unit,
     onLongClick: () -> Unit,
 ) {
     val context = LocalContext.current
-    Row(
+    Box(
         modifier = Modifier
-            .width(widthDp)
-            .clip(RoundedCornerShape(8.dp))
-            .combinedClickable(onClick = onClick, onLongClick = onLongClick)
-            .padding(6.dp),
-        verticalAlignment = Alignment.CenterVertically,
+            .wrapContentHeight()
+            .width(widthDp - 30.dp)
+            .focusable(true)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
     ) {
-        AsyncImage(
-            model              = ImageRequest.Builder(context).data(song.thumbnailUrl).crossfade(true).build(),
-            contentDescription = null,
-            modifier           = Modifier.size(44.dp).clip(RoundedCornerShape(6.dp)),
-            contentScale       = ContentScale.Crop,
-        )
-        Spacer(Modifier.width(8.dp))
-        Column(Modifier.weight(1f)) {
-            Text(
-                text       = song.title,
-                color      = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
-                style      = MaterialTheme.typography.bodySmall,
-                fontWeight = FontWeight.SemiBold,
-                maxLines   = 1,
-                overflow   = TextOverflow.Ellipsis,
+        Row(
+            modifier = Modifier.fillMaxWidth().padding(10.dp),
+        ) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(song.thumbnailUrl)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .align(Alignment.CenterVertically)
+                    .size(44.dp)
+                    .clip(RoundedCornerShape(10.dp)),
             )
-            Text(
-                text     = song.artists.joinToString { it.name },
-                color    = Color.Gray,
-                style    = MaterialTheme.typography.labelSmall,
-                maxLines = 1,
-                overflow = TextOverflow.Ellipsis,
-            )
-        }
-    }
-}
-
-// ── HomeSectionItem — renders one HomePage.Section ───────────────────────────
-@Composable
-private fun HomeSectionItem(section: HomePage.Section, ytGridItem: @Composable (YTItem) -> Unit) {
-    if (section.items.isEmpty()) return
-    val title = section.title ?: return
-    Column(Modifier.padding(vertical = 8.dp)) {
-        Text(
-            text       = title,
-            style      = MaterialTheme.typography.headlineMedium,
-            color      = Color.White,
-            fontWeight = FontWeight.Bold,
-            maxLines   = 1,
-            modifier   = Modifier.fillMaxWidth().padding(vertical = 5.dp),
-        )
-        LazyRow(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-            items(count = section.items.size, key = { section.items[it].id + it }) { i ->
-                Box(Modifier.width(160.dp)) { ytGridItem(section.items[i]) }
+            Column(
+                Modifier
+                    .padding(start = 16.dp)
+                    .align(Alignment.CenterVertically),
+                verticalArrangement = Arrangement.SpaceEvenly,
+            ) {
+                Text(
+                    text     = song.title,
+                    style    = MaterialTheme.typography.titleSmall,
+                    maxLines = 1,
+                    color    = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight(align = Alignment.CenterVertically)
+                        .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                        .focusable()
+                        .padding(bottom = 3.dp),
+                )
+                Text(
+                    text     = song.artists.joinToString { it.name },
+                    style    = MaterialTheme.typography.bodySmall,
+                    maxLines = 1,
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .wrapContentHeight(align = Alignment.CenterVertically)
+                        .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                        .focusable(),
+                )
             }
         }
     }
 }
 
-// ── HomeChip ──────────────────────────────────────────────────────────────────
+// ── DareHomeItem (Xevrae's HomeItem adapted for HomePage.Section + YTItem) ───
+@OptIn(ExperimentalFoundationApi::class)
 @Composable
-private fun HomeChip(text: String, isSelected: Boolean, isLoading: Boolean, onClick: () -> Unit) {
+private fun DareHomeItem(
+    section: HomePage.Section,
+    navController: NavController,
+    mediaMetadataId: String?,
+    currentAlbumId: String?,
+    isPlaying: Boolean,
+    coroutineScope: kotlinx.coroutines.CoroutineScope,
+    onSongClick: (YTItem) -> Unit,
+    onSongLongClick: (YTItem) -> Unit,
+) {
+    if (section.items.isEmpty()) return
+    val title = section.title ?: return
+
+    val lazyListState = rememberLazyListState()
+
+    Column {
+        // Section header (Xevrae's title/subtitle pattern)
+        Column(
+            Modifier.padding(start = 10.dp),
+        ) {
+            if (section.label != null) {
+                Text(
+                    text  = section.label,
+                    style = MaterialTheme.typography.bodySmall,
+                    color = Color.Gray,
+                )
+            }
+            Text(
+                text     = title,
+                style    = MaterialTheme.typography.headlineMedium,
+                color    = Color.White,
+                maxLines = 1,
+                modifier = Modifier.fillMaxWidth(),
+            )
+        }
+
+        // Horizontal scroll of items (Xevrae's LazyRow with snap)
+        LazyRow(state = lazyListState) {
+            items(
+                count = section.items.size,
+                key   = { section.items[it].id + it },
+            ) { i ->
+                val item = section.items[i]
+                val isActive = item.id == mediaMetadataId || item.id == currentAlbumId
+                when (item) {
+                    is SongItem     -> DareHomeItemSong(
+                        item        = item,
+                        isActive    = isActive,
+                        isPlaying   = isPlaying && isActive,
+                        onClick     = { onSongClick(item) },
+                        onLongClick = { onSongLongClick(item) },
+                    )
+                    is ArtistItem   -> DareHomeItemArtist(
+                        item    = item,
+                        onClick = { navController.navigate("artist/${item.id}") },
+                    )
+                    is AlbumItem    -> DareHomeItemContentPlaylist(
+                        thumbnail = item.thumbnail,
+                        title     = item.title,
+                        subtitle  = item.artists?.joinToString { it.name } ?: "",
+                        onClick   = { navController.navigate("album/${item.id}") },
+                    )
+                    is PlaylistItem -> DareHomeItemContentPlaylist(
+                        thumbnail = item.thumbnail ?: "",
+                        title     = item.title,
+                        subtitle  = item.author?.name ?: "",
+                        onClick   = { navController.navigate("online_playlist/${item.id}") },
+                    )
+                    is PodcastItem  -> DareHomeItemContentPlaylist(
+                        thumbnail = item.thumbnail ?: "",
+                        title     = item.title,
+                        subtitle  = "",
+                        onClick   = { navController.navigate("online_podcast/${item.id}") },
+                    )
+                    is EpisodeItem  -> DareHomeItemSong(
+                        item        = SongItem(
+                            id        = item.id,
+                            title     = item.title,
+                            artists   = emptyList(),
+                            thumbnail = item.thumbnail ?: "",
+                            explicit  = false,
+                        ),
+                        isActive    = isActive,
+                        isPlaying   = isPlaying && isActive,
+                        onClick     = { onSongClick(item) },
+                        onLongClick = { onSongLongClick(item) },
+                    )
+                }
+            }
+        }
+    }
+}
+
+// ── DareHomeItemSong (Xevrae's HomeItemSong) ──────────────────────────────────
+@OptIn(ExperimentalFoundationApi::class)
+@Composable
+private fun DareHomeItemSong(
+    item: SongItem,
+    isActive: Boolean,
+    isPlaying: Boolean,
+    onClick: () -> Unit,
+    onLongClick: () -> Unit,
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusable(true)
+            .combinedClickable(onClick = onClick, onLongClick = onLongClick),
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(item.thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .size(160.dp)
+                    .clip(RoundedCornerShape(10.dp)),
+            )
+            Text(
+                text     = item.title,
+                style    = MaterialTheme.typography.titleSmall,
+                color    = if (isActive) MaterialTheme.colorScheme.primary else Color.White,
+                maxLines = 1,
+                modifier = Modifier
+                    .width(160.dp)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .padding(top = 8.dp)
+                    .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                    .focusable(),
+            )
+            Text(
+                text     = item.artists?.joinToString { it.name } ?: "",
+                style    = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                modifier = Modifier
+                    .width(160.dp)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                    .focusable()
+                    .padding(vertical = 3.dp),
+            )
+        }
+    }
+}
+
+// ── DareHomeItemContentPlaylist (Xevrae's HomeItemContentPlaylist) ─────────────
+@Composable
+private fun DareHomeItemContentPlaylist(
+    thumbnail: String,
+    title: String,
+    subtitle: String,
+    onClick: () -> Unit,
+    thumbSize: Dp = 160.dp,
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .wrapContentSize()
+            .focusable(true)
+            .clickable { onClick() },
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .size(thumbSize)
+                    .aspectRatio(1f)
+                    .clip(RoundedCornerShape(10.dp)),
+            )
+            Text(
+                text     = title,
+                style    = MaterialTheme.typography.titleSmall,
+                color    = Color.White,
+                maxLines = 1,
+                modifier = Modifier
+                    .width(thumbSize)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .padding(top = 8.dp)
+                    .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                    .focusable(),
+            )
+            Text(
+                text     = subtitle,
+                style    = MaterialTheme.typography.bodySmall,
+                maxLines = 1,
+                modifier = Modifier
+                    .width(thumbSize)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                    .focusable(),
+            )
+        }
+    }
+}
+
+// ── DareHomeItemArtist (Xevrae's HomeItemArtist) ──────────────────────────────
+@Composable
+private fun DareHomeItemArtist(
+    item: ArtistItem,
+    onClick: () -> Unit,
+) {
+    val context = LocalContext.current
+    Box(
+        modifier = Modifier
+            .fillMaxSize()
+            .focusable(true)
+            .clickable { onClick() },
+    ) {
+        Column(modifier = Modifier.padding(10.dp)) {
+            AsyncImage(
+                model = ImageRequest.Builder(context)
+                    .data(item.thumbnail)
+                    .crossfade(true)
+                    .build(),
+                contentDescription = null,
+                contentScale       = ContentScale.Crop,
+                modifier           = Modifier
+                    .align(Alignment.CenterHorizontally)
+                    .size(160.dp)
+                    .clip(CircleShape),
+            )
+            Text(
+                text      = item.title,
+                style     = MaterialTheme.typography.titleSmall,
+                color     = Color.White,
+                maxLines  = 1,
+                textAlign = TextAlign.Center,
+                modifier  = Modifier
+                    .width(160.dp)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .padding(top = 8.dp)
+                    .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                    .focusable(),
+            )
+            Text(
+                text      = "Artist",
+                style     = MaterialTheme.typography.bodySmall,
+                maxLines  = 1,
+                textAlign = TextAlign.Center,
+                modifier  = Modifier
+                    .width(160.dp)
+                    .wrapContentHeight(Alignment.CenterVertically)
+                    .basicMarquee(iterations = Int.MAX_VALUE, animationMode = MarqueeAnimationMode.Immediately)
+                    .focusable(),
+            )
+        }
+    }
+}
+
+// ── DareChip (Xevrae's Chip composable) ──────────────────────────────────────
+@Composable
+private fun DareChip(
+    text: String,
+    isSelected: Boolean,
+    isLoading: Boolean,
+    onClick: () -> Unit,
+) {
     Box(
         modifier = Modifier
             .clip(RoundedCornerShape(50))
-            .background(if (isSelected) MaterialTheme.colorScheme.primary else Color.White.copy(alpha = 0.1f))
+            .background(
+                if (isSelected) MaterialTheme.colorScheme.primary
+                else Color.White.copy(alpha = 0.1f)
+            )
             .clickable(enabled = !isLoading, onClick = onClick)
             .padding(horizontal = 16.dp, vertical = 8.dp),
     ) {
         Text(
-            text       = text,
-            color      = Color.White,
-            style      = MaterialTheme.typography.labelLarge,
-            fontWeight = if (isSelected) FontWeight.Bold else FontWeight.Normal,
+            text  = text,
+            color = Color.White,
+            style = MaterialTheme.typography.labelLarge,
         )
     }
 }
 
-// ── HomeShimmer ───────────────────────────────────────────────────────────────
+// ── DareHomeShimmer (exact Xevrae HomeShimmer structure) ──────────────────────
 @Composable
-private fun HomeShimmer() {
-    Column(
-        modifier            = Modifier.fillMaxWidth().padding(horizontal = 15.dp),
-        verticalArrangement = Arrangement.spacedBy(20.dp),
-    ) {
-        Spacer(Modifier.height(8.dp))
-        Box(Modifier.fillMaxWidth(0.4f).height(20.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.08f)))
-        Box(Modifier.fillMaxWidth().height(256.dp).clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.05f)))
+private fun DareHomeShimmer() {
+    val shimmerColor = Color.White.copy(alpha = 0.07f)
+    Column(Modifier.padding(horizontal = 15.dp)) {
+        // QuickPicks shimmer (Xevrae's QuickPicksShimmer)
+        Box(
+            Modifier
+                .width(150.dp).height(36.dp)
+                .padding(vertical = 8.dp)
+                .clip(RoundedCornerShape(10))
+                .background(shimmerColor),
+        )
+        repeat(4) {
+            Row(Modifier.height(70.dp).padding(10.dp)) {
+                Box(Modifier.size(50.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
+                Column(Modifier.padding(start = 10.dp).align(Alignment.CenterVertically)) {
+                    Box(Modifier.width(200.dp).height(18.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
+                    Spacer(Modifier.height(4.dp))
+                    Box(Modifier.width(160.dp).height(14.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
+                }
+            }
+        }
+        // Section shimmers (Xevrae's HomeItemShimmer x3)
         repeat(3) {
-            Column(verticalArrangement = Arrangement.spacedBy(8.dp)) {
-                Box(Modifier.width(120.dp).height(18.dp).clip(RoundedCornerShape(4.dp)).background(Color.White.copy(alpha = 0.08f)))
-                Row(horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                    repeat(3) {
-                        Box(Modifier.width(160.dp).height(160.dp).clip(RoundedCornerShape(8.dp)).background(Color.White.copy(alpha = 0.05f)))
+            Spacer(Modifier.height(8.dp))
+            Box(Modifier.width(150.dp).height(36.dp).padding(vertical = 8.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
+            LazyRow(userScrollEnabled = false) {
+                items(4) {
+                    Column(Modifier.height(210.dp).padding(10.dp)) {
+                        Box(Modifier.size(160.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
+                        Spacer(Modifier.size(8.dp))
+                        Box(Modifier.width(130.dp).height(16.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
+                        Spacer(Modifier.size(6.dp))
+                        Box(Modifier.width(100.dp).height(12.dp).clip(RoundedCornerShape(10)).background(shimmerColor))
                     }
                 }
             }
         }
+    }
+}
+
+// ── DareEndOfPage (Xevrae's EndOfPage) ───────────────────────────────────────
+@Composable
+private fun DareEndOfPage() {
+    Box(
+        modifier          = Modifier.fillMaxWidth().height(280.dp),
+        contentAlignment  = Alignment.TopCenter,
+    ) {
+        Text(
+            text      = "© 2026 Dare ${com.dare.music.BuildConfig.VERSION_NAME}\nt4ulquiorra",
+            style     = MaterialTheme.typography.bodySmall,
+            textAlign = TextAlign.Center,
+            modifier  = Modifier.padding(top = 20.dp).alpha(0.8f),
+        )
     }
 }
