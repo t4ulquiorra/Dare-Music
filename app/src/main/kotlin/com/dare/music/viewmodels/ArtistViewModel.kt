@@ -126,56 +126,37 @@ class ArtistViewModel @Inject constructor(
     }
 
     fun toggleChannelSubscription() {
-        val channelId = artistPage?.artist?.channelId ?: artistId
-        val isCurrentlySubscribed = isChannelSubscribed.value
-        val shouldBeSubscribed = !isCurrentlySubscribed
+    val channelId = artistPage?.artist?.channelId ?: artistId
+    val isCurrentlySubscribed = isChannelSubscribed.value
+    val shouldBeSubscribed = !isCurrentlySubscribed
 
-        Timber.d("[CHANNEL_TOGGLE] toggleChannelSubscription called: artistId=$artistId, channelId=$channelId, isCurrentlySubscribed=$isCurrentlySubscribed, shouldBeSubscribed=$shouldBeSubscribed")
+    _apiSubscribed.value = shouldBeSubscribed
 
-        // Optimistically update API state for immediate UI feedback
-        _apiSubscribed.value = shouldBeSubscribed
-
-        viewModelScope.launch(Dispatchers.IO) {
-            Timber.d("[CHANNEL_TOGGLE] Inside coroutine, updating database...")
-            // Update local database first (optimistic update)
-            // Call DAO methods directly - they're synchronous on IO dispatcher
-            val artist = libraryArtist.value?.artist
-            Timber.d("[CHANNEL_TOGGLE] libraryArtist.value?.artist = $artist")
-            if (artist != null) {
-                val newBookmark = if (shouldBeSubscribed) {
-                    artist.bookmarkedAt ?: java.time.LocalDateTime.now()
-                } else {
-                    null
-                }
-                // Also set isPodcastChannel if subscribing from podcast context
-                val updatedArtist = artist.copy(
+    viewModelScope.launch(Dispatchers.IO) {
+        val artist = libraryArtist.value?.artist
+        if (artist != null) {
+            val newBookmark = if (shouldBeSubscribed) {
+                artist.bookmarkedAt ?: java.time.LocalDateTime.now()
+            } else null
+            database.update(
+                artist.copy(
                     bookmarkedAt = newBookmark,
-                    isPodcastChannel = if (shouldBeSubscribed && isPodcastChannel) true else artist.isPodcastChannel
+                    isPodcastChannel = if (shouldBeSubscribed && isPodcastChannel) true else artist.isPodcastChannel,
                 )
-                Timber.d("[CHANNEL_TOGGLE] Updating existing artist: ${artist.id} -> bookmarkedAt=$newBookmark, isPodcastChannel=${updatedArtist.isPodcastChannel}")
-                database.update(updatedArtist)
-            } else if (shouldBeSubscribed) {
-                Timber.d("[CHANNEL_TOGGLE] No existing artist, inserting new one")
-                artistPage?.artist?.let {
-                    database.insert(
-                        ArtistEntity(
-                            id = artistId,
-                            name = it.title,
-                            channelId = it.channelId,
-                            thumbnailUrl = it.thumbnail,
-                            bookmarkedAt = java.time.LocalDateTime.now(),
-                            isPodcastChannel = isPodcastChannel,
-                        )
-                    )
-                    Timber.d("[CHANNEL_TOGGLE] Inserted new artist: $artistId, isPodcastChannel=$isPodcastChannel")
-                } ?: Timber.d("[CHANNEL_TOGGLE] artistPage?.artist is null, cannot insert")
-            } else {
-                Timber.d("[CHANNEL_TOGGLE] No artist and shouldBeSubscribed=false, nothing to do")
-            }
-
-            Timber.d("[CHANNEL_TOGGLE] Calling syncUtils.subscribeChannel($channelId, $shouldBeSubscribed)")
-            // Sync with YouTube (handles login check internally)
-            syncUtils.subscribeChannel(channelId, shouldBeSubscribed)
+            )
+        } else if (shouldBeSubscribed) {
+            // Always insert — even if artistPage hasn't loaded yet
+            database.insert(
+                ArtistEntity(
+                    id             = artistId,
+                    name           = artistPage?.artist?.title ?: artistId,
+                    channelId      = artistPage?.artist?.channelId,
+                    thumbnailUrl   = artistPage?.artist?.thumbnail,
+                    bookmarkedAt   = java.time.LocalDateTime.now(),
+                    isPodcastChannel = isPodcastChannel,
+                )
+            )
         }
+        syncUtils.subscribeChannel(channelId, shouldBeSubscribed)
     }
 }
