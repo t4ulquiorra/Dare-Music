@@ -160,3 +160,4 @@ class ArtistViewModel @Inject constructor(
         syncUtils.subscribeChannel(channelId, shouldBeSubscribed)
     }
 }
+}
