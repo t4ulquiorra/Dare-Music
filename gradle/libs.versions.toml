@@ -3,6 +3,7 @@ androidGradlePlugin = "9.1.0"
 json = "20251224"
 kotlin = "2.3.20"
 compose = "1.10.6"
+material-icons = "1.7.8"
 lifecycle = "2.10.0"
 material3 = "1.5.0-alpha16"
 appcompat = "1.7.1"
@@ -59,7 +60,7 @@ viewmodel = { module = "androidx.lifecycle:lifecycle-viewmodel-ktx", version.ref
 viewmodel-compose = { module = "androidx.lifecycle:lifecycle-viewmodel-compose", version.ref = "lifecycle" }
 
 material3 = { module = "androidx.compose.material3:material3", version.ref = "material3" }
-material-icons = { module = "androidx.compose.material:material-icons-extended", version.ref = "compose" }
+material-icons = { module = "androidx.compose.material:material-icons-extended", version.ref = "material-icons" }
 
 materialKolor = { module = "com.materialkolor:material-kolor", version.ref = "materialKolor" }
 
