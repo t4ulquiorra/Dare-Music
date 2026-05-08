@@ -5,11 +5,6 @@
  * AlbumScreen — Xevrae visual port, Dare data
  */
 package com.dare.music.ui.screens
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -89,6 +84,10 @@ import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalContext
+import androidx.core.net.toUri
+import androidx.media3.exoplayer.offline.DownloadRequest
+import androidx.media3.exoplayer.offline.DownloadService
+import com.dare.music.playback.ExoDownloadService
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.platform.LocalHapticFeedback
 import androidx.compose.ui.res.painterResource
@@ -371,8 +370,18 @@ fun AlbumScreen(
                                                     else -> {
                                                         IconButton(
                                                             onClick  = {
-                                                                coroutineScope.launch {
-                                                                    aws.songs.forEach { downloadUtil.download(it) }
+                                                                aws.songs.forEach { song ->
+                                                                    val downloadRequest = DownloadRequest
+                                                                        .Builder(song.id, song.id.toUri())
+                                                                        .setCustomCacheKey(song.id)
+                                                                        .setData(song.song.title.toByteArray())
+                                                                        .build()
+                                                                    DownloadService.sendAddDownload(
+                                                                        context,
+                                                                        ExoDownloadService::class.java,
+                                                                        downloadRequest,
+                                                                        false,
+                                                                    )
                                                                 }
                                                             },
                                                             modifier = Modifier.size(36.dp),

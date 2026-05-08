@@ -6,11 +6,6 @@
  */
 package com.dare.music.ui.screens.playlist
 import com.dare.music.extensions.toMediaItem
-import androidx.compose.animation.animateContentSize
-import androidx.compose.foundation.BorderStroke
-import androidx.compose.runtime.CompositionLocalProvider
-import androidx.compose.material.icons.Icons
-import androidx.compose.material.icons.rounded.*
 import androidx.compose.foundation.layout.asPaddingValues
 
 import androidx.activity.compose.BackHandler
@@ -210,6 +205,7 @@ fun OnlinePlaylistScreen(
     if (showSearchBar) {
         BackHandler { showSearchBar = false; query = "" }
     }
+    val lazyListState = rememberLazyListState()
     LaunchedEffect(showSearchBar) {
         if (showSearchBar) lazyListState.animateScrollToItem(0)
     }
@@ -235,7 +231,6 @@ fun OnlinePlaylistScreen(
     }
 
     // Scroll + TopAppBar
-    val lazyListState = rememberLazyListState()
     val firstItemVisible by remember { derivedStateOf { lazyListState.firstVisibleItemIndex == 0 } }
     var shouldHideTopBar by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(firstItemVisible) { shouldHideTopBar = !firstItemVisible }
