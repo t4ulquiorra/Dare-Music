@@ -5,6 +5,13 @@
  * OnlinePlaylistScreen — Xevrae visual port, Dare data
  */
 package com.dare.music.ui.screens.playlist
+import com.dare.music.extensions.toMediaItem
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
+import androidx.compose.foundation.layout.asPaddingValues
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -204,7 +211,7 @@ fun OnlinePlaylistScreen(
         BackHandler { showSearchBar = false; query = "" }
     }
     LaunchedEffect(showSearchBar) {
-        if (showSearchBar) lazyState.animateScrollToItem(0)
+        if (showSearchBar) lazyListState.animateScrollToItem(0)
     }
 
     // Palette colors
@@ -228,8 +235,8 @@ fun OnlinePlaylistScreen(
     }
 
     // Scroll + TopAppBar
-    val lazyState = rememberLazyListState()
-    val firstItemVisible by remember { derivedStateOf { lazyState.firstVisibleItemIndex == 0 } }
+    val lazyListState = rememberLazyListState()
+    val firstItemVisible by remember { derivedStateOf { lazyListState.firstVisibleItemIndex == 0 } }
     var shouldHideTopBar by rememberSaveable { mutableStateOf(false) }
     LaunchedEffect(firstItemVisible) { shouldHideTopBar = !firstItemVisible }
 
@@ -243,12 +250,12 @@ fun OnlinePlaylistScreen(
         derivedStateOf {
             !isLoadingMore &&
             viewModel.continuation != null &&
-            (lazyState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >=
-            (lazyState.layoutInfo.totalItemsCount - 6)
+            (lazyListState.layoutInfo.visibleItemsInfo.lastOrNull()?.index ?: -9) >=
+            (lazyListState.layoutInfo.totalItemsCount - 6)
         }
     }
     LaunchedEffect(shouldStartPaginate) {
-        if (shouldStartPaginate) viewModel.loadMore()
+        if (shouldStartPaginate) viewModel.loadMoreSongs()
     }
 
     Box(Modifier.fillMaxSize()) {
@@ -266,7 +273,7 @@ fun OnlinePlaylistScreen(
                 } else {
                     LazyColumn(
                         modifier       = Modifier.fillMaxWidth().background(Color.Black),
-                        state          = lazyState,
+                        state          = lazyListState,
                         contentPadding = LocalPlayerAwareWindowInsets.current.asPaddingValues(),
                     ) {
                         // ── Header or Search bar (exact Xevrae) ───────────
@@ -533,9 +540,6 @@ fun OnlinePlaylistScreen(
                                             YouTubeSongMenu(song = song, navController = navController, onDismiss = menuState::dismiss)
                                         }
                                     },
-                                    onAddToQueue = {
-                                        playerConnection.player.addMediaItem(song.toMediaMetadata().toMediaItem())
-                                    },
                                     modifier     = Modifier.fillMaxWidth(),
                                 )
                             }
@@ -606,7 +610,6 @@ private fun XevPlaylistSongRow(
     isActive     : Boolean,
     onPlay       : () -> Unit,
     onMore       : () -> Unit,
-    onAddToQueue : () -> Unit,
     modifier     : Modifier = Modifier,
 ) {
     val context        = LocalContext.current
@@ -639,7 +642,6 @@ private fun XevPlaylistSongRow(
                             }
                         },
                         onDragEnd = {
-                            if (offsetX.value >= maxOffset) onAddToQueue()
                             coroutineScope.launch { offsetX.animateTo(0f) }
                         },
                     )

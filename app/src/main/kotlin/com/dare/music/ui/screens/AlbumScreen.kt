@@ -5,6 +5,11 @@
  * AlbumScreen — Xevrae visual port, Dare data
  */
 package com.dare.music.ui.screens
+import androidx.compose.animation.animateContentSize
+import androidx.compose.foundation.BorderStroke
+import androidx.compose.runtime.CompositionLocalProvider
+import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.rounded.*
 
 import androidx.activity.compose.BackHandler
 import androidx.compose.animation.AnimatedVisibility
@@ -317,7 +322,7 @@ fun AlbumScreen(
                                             Spacer(Modifier.height(8.dp))
                                             // Year + Album type (Xevrae: bodyMedium, 0xC4FFFFFF)
                                             Text(
-                                                text  = "${aws.album.year ?: ""} • ${stringResource(R.string.album)}",
+                                                text  = "${aws.album.year ?: ""} • ${"Album"}",
                                                 style = MaterialTheme.typography.bodyMedium,
                                                 color = Color(0xC4FFFFFF),
                                             )
@@ -360,14 +365,14 @@ fun AlbumScreen(
                                                     }
                                                     Download.STATE_DOWNLOADING, Download.STATE_QUEUED -> {
                                                         IconButton(onClick = {}, modifier = Modifier.size(36.dp)) {
-                                                            Icon(painterResource(R.drawable.downloading), tint = MaterialTheme.colorScheme.primary, contentDescription = null, modifier = Modifier.fillMaxSize().padding(2.dp))
+                                                            Icon(painterResource(R.drawable.sync), tint = MaterialTheme.colorScheme.primary, contentDescription = null, modifier = Modifier.fillMaxSize().padding(2.dp))
                                                         }
                                                     }
                                                     else -> {
                                                         IconButton(
                                                             onClick  = {
                                                                 coroutineScope.launch {
-                                                                    aws.songs.forEach { downloadUtil.download(it.toMediaItem()) }
+                                                                    aws.songs.forEach { downloadUtil.download(it) }
                                                                 }
                                                             },
                                                             modifier = Modifier.size(36.dp),
@@ -414,7 +419,7 @@ fun AlbumScreen(
                                         }
                                         // Description (Xevrae: DescriptionView → Dare: ExpandableText)
                                         ExpandableText(
-                                            text             = aws.album.description.orEmpty().ifEmpty { stringResource(R.string.no_description) },
+                                            text             = "".ifEmpty { "No description" },
                                             collapsedMaxLines = 3,
                                             modifier         = Modifier.padding(vertical = 8.dp),
                                         )
