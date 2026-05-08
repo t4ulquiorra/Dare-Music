@@ -114,7 +114,6 @@ import androidx.lifecycle.lifecycleScope
 import androidx.media3.common.MediaItem
 import androidx.media3.common.Player
 import androidx.navigation.NavHostController
-import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.currentBackStackEntryAsState
 import androidx.navigation.compose.rememberNavController
 import coil3.compose.AsyncImage
@@ -177,6 +176,7 @@ import com.dare.music.ui.component.LocalMenuState
 import com.dare.music.ui.component.rememberBottomSheetState
 import com.dare.music.ui.component.shimmer.ShimmerTheme
 import com.dare.music.ui.menu.YouTubeSongMenu
+import com.dare.music.ui.navigation.AppNavigationGraph
 import com.dare.music.ui.player.BottomSheetPlayer
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.backdrops.layerBackdrop
@@ -243,13 +243,9 @@ class MainActivity : ComponentActivity() {
     private var pendingIntent: Intent? = null
     private var latestVersionName by mutableStateOf(BuildConfig.VERSION_NAME)
 
-    // Keep PlayerConnection as regular property - NOT mutableStateOf to prevent UI recomposition
-    // when it becomes null during onStop. Only update the snapshot for Compose when needed.
     private var playerConnection: PlayerConnection? = null
-    
-    // This is the snapshot we pass to Compose - changes here trigger recomposition
     private var playerConnectionSnapshot by mutableStateOf<PlayerConnection?>(null)
-    
+
     private var isServiceBound = false
 
     private val serviceConnection =
@@ -263,11 +259,9 @@ class MainActivity : ComponentActivity() {
                         playerConnection = PlayerConnection(this@MainActivity, service, database, lifecycleScope)
                         playerConnectionSnapshot = playerConnection
                         Timber.tag("MainActivity").d("PlayerConnection created successfully")
-                        // Connect Listen Together manager to player
                         listenTogetherManager.setPlayerConnection(playerConnection)
                     } catch (e: Exception) {
                         Timber.tag("MainActivity").e(e, "Failed to create PlayerConnection")
-                        // Retry after a delay of 500ms
                         lifecycleScope.launch {
                             delay(500)
                             try {
@@ -283,11 +277,8 @@ class MainActivity : ComponentActivity() {
             }
 
             override fun onServiceDisconnected(name: ComponentName?) {
-                // Disconnect Listen Together manager
                 listenTogetherManager.setPlayerConnection(null)
                 playerConnection?.dispose()
-                // DO NOT null out playerConnection here - keep it for when service reconnects
-                // DO NOT update playerConnectionSnapshot - this is the key to preventing recomposition
             }
         }
 
@@ -301,31 +292,19 @@ class MainActivity : ComponentActivity() {
             isServiceBound = false
             listenTogetherManager.setPlayerConnection(null)
             playerConnection?.dispose()
-            // DO NOT null out playerConnection here - keep it for reconnection
-            // DO NOT update playerConnectionSnapshot - this prevents UI recomposition
         }
     }
 
     override fun onStart() {
         super.onStart()
-        // Request notification permission on Android 13+
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
             if (ContextCompat.checkSelfPermission(this, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
                 ActivityCompat.requestPermissions(this, arrayOf(Manifest.permission.POST_NOTIFICATIONS), 1000)
             }
         }
 
-        // Explicitly start the service so it becomes an "explicitly started" service.
-        // Without this, the service only exists while a client is bound (BIND_AUTO_CREATE).
-        // When onStop() releases the binding (e.g. screen off, app backgrounded), Media3's
-        // MediaNotificationManager tries to call startForegroundService() to keep the service
-        // alive — but this is blocked on Android 12+ when the app is in the background,
-        // causing ForegroundServiceStartNotAllowedException. Starting the service explicitly
-        // here ensures it persists independently of binding state, so Media3 never needs to
-        // re-start it from a background context.
         startService(Intent(this, MusicService::class.java))
-        
-        // Bind to service - if already bound, this is a no-op but ensures we stay connected
+
         if (!isServiceBound) {
             bindService(
                 Intent(this, MusicService::class.java),
@@ -337,9 +316,6 @@ class MainActivity : ComponentActivity() {
     }
 
     override fun onStop() {
-        // CRITICAL FIX: Do NOT unbind service or dispose playerConnection here!
-        // Just disconnect ListenTogetherManager to stop audio routing
-        // This prevents UI recomposition when switching apps
         listenTogetherManager.setPlayerConnection(null)
         super.onStop()
     }
@@ -352,12 +328,11 @@ class MainActivity : ComponentActivity() {
         ) {
             stopService(Intent(this, MusicService::class.java))
         }
-        
-        // Full cleanup - only on actual destroy
+
         playerConnection?.dispose()
         playerConnection = null
         playerConnectionSnapshot = null
-        
+
         safeUnbindService("onDestroy()")
     }
 
@@ -377,7 +352,6 @@ class MainActivity : ComponentActivity() {
         window.decorView.layoutDirection = View.LAYOUT_DIRECTION_LTR
         WindowCompat.setDecorFitsSystemWindows(window, false)
 
-        // Initialize Listen Together manager
         listenTogetherManager.initialize()
 
         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU) {
@@ -566,7 +540,6 @@ class MainActivity : ComponentActivity() {
                                 )
                             themeColor = result.image?.toBitmap()?.extractThemeColor() ?: selectedThemeColor
                         } catch (e: Exception) {
-                            // Fallback to default on error
                             themeColor = selectedThemeColor
                         }
                     }
@@ -599,25 +572,22 @@ class MainActivity : ComponentActivity() {
                 LaunchedEffect(Unit) {
                     val lastSeenVersion = dataStore.data.first()[LastSeenVersionKey] ?: ""
                     val currentVersion = BuildConfig.VERSION_NAME
-                    // SimpMusic Removal Migration
                     if (dataStore.data.first()[SimpMusicMigrationDoneKey] != true) {
                         dataStore.edit { settings ->
-                            // Remove SimpMusic from serialized order string and append Paxsenix if missing
                             val currentOrder = settings[LyricsProviderOrderKey] ?: ""
                             if (currentOrder.contains("SimpMusic") || !currentOrder.contains("Paxsenix")) {
                                 val orderList = currentOrder.split(",")
                                     .map { it.trim() }
                                     .filter { it.isNotBlank() && it != "SimpMusic" }
                                     .toMutableList()
-                                
+
                                 if (!orderList.contains("Paxsenix")) {
                                     orderList.add("Paxsenix")
                                 }
-                                
+
                                 settings[LyricsProviderOrderKey] = orderList.joinToString(",")
                             }
 
-                            // Reset preferred provider if it was SimpMusic
                             if (settings[PreferredLyricsProviderKey] == "SIMPMUSIC") {
                                 settings[PreferredLyricsProviderKey] = PreferredLyricsProvider.LRCLIB.name
                             }
@@ -628,7 +598,6 @@ class MainActivity : ComponentActivity() {
 
                     dataStore.edit { settings ->
                         settings[LastSeenVersionKey] = currentVersion
-                        // Store first launch date if not already set
                         if (settings[com.dare.music.constants.FirstLaunchDateKey] == null) {
                             settings[com.dare.music.constants.FirstLaunchDateKey] = System.currentTimeMillis()
                         }
@@ -765,7 +734,6 @@ class MainActivity : ComponentActivity() {
                         },
                     )
 
-                // Navigation tracking
                 LaunchedEffect(navBackStackEntry) {
                     if (inSearchScreen) {
                         val searchQuery =
@@ -787,7 +755,6 @@ class MainActivity : ComponentActivity() {
                         onQueryChange(TextFieldValue())
                     }
 
-                    // Reset scroll behavior for main navigation items
                     if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route }) {
                         if (navigationItems.fastAny { it.route == previousTab }) {
                             topAppBarScrollBehavior.state.resetHeightOffset()
@@ -796,7 +763,6 @@ class MainActivity : ComponentActivity() {
 
                     topAppBarScrollBehavior.state.resetHeightOffset()
 
-                    // Track previous tab for animations
                     navController.currentBackStackEntry?.destination?.route?.let {
                         setPreviousTab(it)
                     }
@@ -984,7 +950,7 @@ class MainActivity : ComponentActivity() {
                             }
                         },
                         bottomBar = {
-                            val currentBackStackEntry = navController.currentBackStackEntry // reads reactively outside remember
+                            val currentBackStackEntry = navController.currentBackStackEntry
 
                             val onNavItemClick: (Screens, Boolean) -> Unit =
                                 remember(navController, coroutineScope, topAppBarScrollBehavior, playerBottomSheetState, currentBackStackEntry) {
@@ -996,17 +962,14 @@ class MainActivity : ComponentActivity() {
                                             val targetEntry = try {
                                                 val route = navController.currentBackStackEntry?.destination?.route
                                                 if (route == "search/{query}" || route == "search_input") {
-                                                    // For search screens, use search_input entry
                                                     navController.getBackStackEntry("search_input")
                                                 } else {
-                                                    // For other screens, use current entry
                                                     navController.currentBackStackEntry
                                                 }
                                             } catch (e: Exception) {
                                                 null
                                             }
 
-                                            // Use appropriate key based on screen type
                                             if (screen == Screens.Search) {
                                                 val current = targetEntry?.savedStateHandle?.get<Int>("scrollToTopCount") ?: 0
                                                 targetEntry?.savedStateHandle?.set("scrollToTopCount", current + 1)
@@ -1041,7 +1004,6 @@ class MainActivity : ComponentActivity() {
                             val positionState = remember { mutableLongStateOf(0L) }
                             val durationState = remember { mutableLongStateOf(0L) }
 
-                            // Pre-calculate values for graphicsLayer to avoid reading state during composition
                             val navBarTotalHeight = bottomInset + NavigationBarHeight
 
                             if (!showRail && currentRoute != "wrapped") {
@@ -1057,34 +1019,34 @@ class MainActivity : ComponentActivity() {
                                     )
 
                                     AppNavigationBar(
-                                            navigationItems = navigationItems,
-                                            currentRoute = currentRoute,
-                                            onItemClick = onNavItemClick,
-                                            pureBlack = pureBlack,
-                                            slimNav = slimNav,
-                                            isLandscape = isLandscape,
-                                            onSearchLongClick = onSearchLongClick,
-                                            modifier =
-                                                Modifier
-                                                    .align(Alignment.BottomCenter)
-                                                    .padding(bottom = if (isLandscape) bottomInset else 0.dp)
-                                                    .height(bottomInset + navPadding + if (!isLandscape) MiniPlayerHeight * 0.7f else 0.dp)
-                                                    .graphicsLayer {
-                                                        val navBarHeightPx = navigationBarHeight.toPx()
-                                                        val totalHeightPx = navBarTotalHeight.toPx()
+                                        navigationItems = navigationItems,
+                                        currentRoute = currentRoute,
+                                        onItemClick = onNavItemClick,
+                                        pureBlack = pureBlack,
+                                        slimNav = slimNav,
+                                        isLandscape = isLandscape,
+                                        onSearchLongClick = onSearchLongClick,
+                                        modifier =
+                                            Modifier
+                                                .align(Alignment.BottomCenter)
+                                                .padding(bottom = if (isLandscape) bottomInset else 0.dp)
+                                                .height(bottomInset + navPadding + if (!isLandscape) MiniPlayerHeight * 0.7f else 0.dp)
+                                                .graphicsLayer {
+                                                    val navBarHeightPx = navigationBarHeight.toPx()
+                                                    val totalHeightPx = navBarTotalHeight.toPx()
 
-                                                        translationY =
-                                                            if (navBarHeightPx == 0f) {
-                                                                totalHeightPx
-                                                            } else {
-                                                                val progress = playerBottomSheetState.progress.coerceIn(0f, 1f)
-                                                                val slideOffset = totalHeightPx * progress
-                                                                val hideOffset =
-                                                                    totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
-                                                                slideOffset + hideOffset
-                                                            }
-                                                    },
-                                        )
+                                                    translationY =
+                                                        if (navBarHeightPx == 0f) {
+                                                            totalHeightPx
+                                                        } else {
+                                                            val progress = playerBottomSheetState.progress.coerceIn(0f, 1f)
+                                                            val slideOffset = totalHeightPx * progress
+                                                            val hideOffset =
+                                                                totalHeightPx * (1 - navBarHeightPx / NavigationBarHeight.toPx())
+                                                            slideOffset + hideOffset
+                                                        }
+                                                },
+                                    )
 
                                     Box(
                                         modifier =
@@ -1092,7 +1054,6 @@ class MainActivity : ComponentActivity() {
                                                 .fillMaxWidth()
                                                 .align(Alignment.BottomCenter)
                                                 .height(bottomInsetDp)
-                                                // Use graphicsLayer for background color changes
                                                 .graphicsLayer {
                                                     val progress = playerBottomSheetState.progress
                                                     alpha =
@@ -1124,7 +1085,6 @@ class MainActivity : ComponentActivity() {
                                             .fillMaxWidth()
                                             .align(Alignment.BottomCenter)
                                             .height(bottomInsetDp)
-                                            // Use graphicsLayer for background color changes
                                             .graphicsLayer {
                                                 val progress = playerBottomSheetState.progress
                                                 alpha =
@@ -1182,93 +1142,19 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                             Box(Modifier.weight(1f).layerBackdrop(glassBackdrop)) {
-                                // NavHost with animations (Material 3 Expressive style)
-                                NavHost(
+                                AppNavigationGraph(
                                     navController = navController,
-                                    startDestination =
-                                        when (tabOpenedFromShortcut ?: defaultOpenTab) {
-                                            NavigationTab.HOME -> Screens.Home
-                                            NavigationTab.LIBRARY -> Screens.Library
-                                            else -> Screens.Home
-                                        }.route,
-                                    // Enter Transition - smoother with smaller offset and longer duration
-                                    enterTransition = {
-                                        val currentRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == targetState.destination.route
-                                            }
-                                        val previousRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == initialState.destination.route
-                                            }
-
-                                        if (currentRouteIndex == -1 || currentRouteIndex > previousRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                        }
-                                    },
-                                    // Exit Transition - smoother with smaller offset and longer duration
-                                    exitTransition = {
-                                        val currentRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == initialState.destination.route
-                                            }
-                                        val targetRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == targetState.destination.route
-                                            }
-
-                                        if (targetRouteIndex == -1 || targetRouteIndex > currentRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                        }
-                                    },
-                                    // Pop Enter Transition - smoother with smaller offset and longer duration
-                                    popEnterTransition = {
-                                        val currentRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == targetState.destination.route
-                                            }
-                                        val previousRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == initialState.destination.route
-                                            }
-
-                                        if (previousRouteIndex != -1 && previousRouteIndex < currentRouteIndex) {
-                                            slideInHorizontally { it / 8 } + fadeIn(tween(200))
-                                        } else {
-                                            slideInHorizontally { -it / 8 } + fadeIn(tween(200))
-                                        }
-                                    },
-                                    // Pop Exit Transition - smoother with smaller offset and longer duration
-                                    popExitTransition = {
-                                        val currentRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == initialState.destination.route
-                                            }
-                                        val targetRouteIndex =
-                                            navigationItems.indexOfFirst {
-                                                it.route == targetState.destination.route
-                                            }
-
-                                        if (currentRouteIndex != -1 && currentRouteIndex < targetRouteIndex) {
-                                            slideOutHorizontally { -it / 8 } + fadeOut(tween(200))
-                                        } else {
-                                            slideOutHorizontally { it / 8 } + fadeOut(tween(200))
-                                        }
-                                    },
-                                    modifier = Modifier.nestedScroll(topAppBarScrollBehavior.nestedScrollConnection),
-                                ) {
-                                    navigationBuilder(
-                                        navController = navController,
-                                        scrollBehavior = topAppBarScrollBehavior,
-                                        latestVersionName = latestVersionName,
-                                        activity = this@MainActivity,
-                                        snackbarHostState = snackbarHostState,
-                                    )
-                                }
+                                    startDestination = when (tabOpenedFromShortcut ?: defaultOpenTab) {
+                                        NavigationTab.HOME -> Screens.Home
+                                        NavigationTab.LIBRARY -> Screens.Library
+                                        else -> Screens.Home
+                                    }.route,
+                                    navigationItems = navigationItems,
+                                    scrollBehavior = topAppBarScrollBehavior,
+                                    latestVersionName = latestVersionName,
+                                    activity = this@MainActivity,
+                                    snackbarHostState = snackbarHostState,
+                                )
                             }
                         }
                     }
@@ -1324,10 +1210,6 @@ class MainActivity : ComponentActivity() {
         }
     }
 
-    /**
-     * Handles the ACTION_RECOGNITION intent sent from the Music Recognizer Widget.
-     * Always navigates to the recognition screen to show the result.
-     */
     private fun handleRecognitionIntent(
         intent: Intent,
         navController: NavHostController,
