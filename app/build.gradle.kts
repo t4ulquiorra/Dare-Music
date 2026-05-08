@@ -232,6 +232,7 @@ dependencies {
     implementation(libs.viewmodel.compose)
 
     implementation(libs.material3)
+    implementation(libs.material.icons)
     implementation(libs.palette)
     implementation(libs.materialKolor)
 
