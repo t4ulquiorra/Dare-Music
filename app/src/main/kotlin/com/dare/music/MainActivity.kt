@@ -782,7 +782,7 @@ class MainActivity : ComponentActivity() {
                                     bottomNavScreens = navigationItems.take(3),
                                     currentRoute     = currentRoute,
                                     onItemClick      = onNavItemClick,
-                                    onOpenNowPlaying = { playerBottomSheetState.expand() },
+                                    onOpenNowPlaying = { playerBottomSheetState.expandSoft() },
                                     onStopPlayer     = {
                                         playerConnection?.player?.stop()
                                         playerConnection?.player?.clearMediaItems()
