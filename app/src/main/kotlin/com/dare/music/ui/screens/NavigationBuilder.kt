@@ -34,6 +34,7 @@ import com.dare.music.ui.screens.equalizer.EqScreen
 import com.dare.music.ui.screens.library.LibraryScreen
 import com.dare.music.ui.screens.search.OnlineSearchResult
 import com.dare.music.ui.screens.search.SearchScreen
+import com.dare.music.ui.screens.settings.DarkMode
 import com.dare.music.ui.screens.wrapped.WrappedScreen
 import com.dare.music.utils.rememberEnumPreference
 import com.dare.music.utils.rememberPreference
