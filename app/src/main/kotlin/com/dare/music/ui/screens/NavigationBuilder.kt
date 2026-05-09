@@ -25,42 +25,15 @@ import androidx.navigation.compose.dialog
 import androidx.navigation.navArgument
 import com.dare.music.constants.DarkModeKey
 import com.dare.music.constants.PureBlackKey
-import com.dare.music.ui.screens.artist.ArtistAlbumsScreen
-import com.dare.music.ui.screens.artist.ArtistItemsScreen
-import com.dare.music.ui.screens.artist.ArtistScreen
-import com.dare.music.ui.screens.artist.ArtistSongsScreen
+import com.dare.music.ui.navigation.graph.homeScreenGraph
+import com.dare.music.ui.navigation.graph.libraryScreenGraph
+import com.dare.music.ui.navigation.graph.listScreenGraph
+import com.dare.music.ui.navigation.graph.loginScreenGraph
+import com.dare.music.ui.navigation.graph.settingsScreenGraph
 import com.dare.music.ui.screens.equalizer.EqScreen
 import com.dare.music.ui.screens.library.LibraryScreen
-import com.dare.music.ui.screens.playlist.AutoPlaylistScreen
-import com.dare.music.ui.screens.playlist.CachePlaylistScreen
-import com.dare.music.ui.screens.playlist.LocalPlaylistScreen
-import com.dare.music.ui.screens.playlist.OnlinePlaylistScreen
-import com.dare.music.ui.screens.playlist.TopPlaylistScreen
-import com.dare.music.ui.screens.podcast.OnlinePodcastScreen
-import com.dare.music.ui.screens.recognition.RecognitionHistoryScreen
-import com.dare.music.ui.screens.recognition.RecognitionScreen
 import com.dare.music.ui.screens.search.OnlineSearchResult
 import com.dare.music.ui.screens.search.SearchScreen
-import com.dare.music.ui.screens.settings.AboutScreen
-import com.dare.music.ui.screens.settings.AccountSettings
-import com.dare.music.ui.screens.settings.AiSettings
-import com.dare.music.ui.screens.settings.AndroidAutoSettings
-import com.dare.music.ui.screens.settings.AppearanceSettings
-import com.dare.music.ui.screens.settings.BackupAndRestore
-import com.dare.music.ui.screens.settings.ContentSettings
-import com.dare.music.ui.screens.settings.DarkMode
-import com.dare.music.ui.screens.settings.DiscordLoginScreen
-import com.dare.music.ui.screens.settings.PlayerSettings
-import com.dare.music.ui.screens.settings.PrivacySettings
-import com.dare.music.ui.screens.settings.RomanizationSettings
-import com.dare.music.ui.screens.settings.SettingsScreen
-import com.dare.music.ui.screens.settings.StorageSettings
-import com.dare.music.ui.screens.settings.ThemeScreen
-import com.dare.music.ui.screens.settings.UpdaterScreen
-import com.dare.music.ui.screens.settings.integrations.DiscordSettings
-import com.dare.music.ui.screens.settings.integrations.IntegrationScreen
-import com.dare.music.ui.screens.settings.integrations.LastFMSettings
-import com.dare.music.ui.screens.settings.integrations.ListenTogetherSettings
 import com.dare.music.ui.screens.wrapped.WrappedScreen
 import com.dare.music.utils.rememberEnumPreference
 import com.dare.music.utils.rememberPreference
@@ -73,6 +46,7 @@ fun NavGraphBuilder.navigationBuilder(
     activity: Activity,
     snackbarHostState: SnackbarHostState,
 ) {
+    // Bottom bar destinations
     composable(Screens.Home.route) {
         HomeScreen(navController = navController, snackbarHostState = snackbarHostState)
     }
@@ -92,7 +66,7 @@ fun NavGraphBuilder.navigationBuilder(
         SearchScreen(
             navController = navController,
             pureBlack = pureBlack,
-            savedStateHandle = backStackEntry.savedStateHandle
+            savedStateHandle = backStackEntry.savedStateHandle,
         )
     }
 
@@ -104,62 +78,18 @@ fun NavGraphBuilder.navigationBuilder(
         ListenTogetherScreen(navController, showTopBar = false)
     }
 
-    composable(
-        route = "listen_together_from_topbar",
-    ) {
+    composable("listen_together_from_topbar") {
         ListenTogetherScreen(navController, showTopBar = true)
-    }
-
-    composable("history") {
-        HistoryScreen(navController)
-    }
-
-    composable("stats") {
-        StatsScreen(navController)
-    }
-
-    composable("mood_and_genres") {
-        MoodAndGenresScreen(navController)
-    }
-
-    composable("account") {
-        AccountScreen(navController)
-    }
-
-    composable("new_release") {
-        NewReleaseScreen(navController)
-    }
-
-    composable("charts_screen") {
-        ChartsScreen(navController)
-    }
-
-    composable(
-        route = "browse/{browseId}",
-        arguments =
-            listOf(
-                navArgument("browseId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        BrowseScreen(
-            navController,
-            it.arguments?.getString("browseId"),
-        )
     }
 
     composable(
         route = "search/{query}",
-        arguments =
-            listOf(
-                navArgument("query") {
-                    type = NavType.StringType
-                },
-            ),
-        enterTransition = {
-            fadeIn(tween(250))
-        },
+        arguments = listOf(
+            navArgument("query") {
+                type = NavType.StringType
+            },
+        ),
+        enterTransition = { fadeIn(tween(250)) },
         exitTransition = {
             if (targetState.destination.route?.startsWith("search/") == true) {
                 fadeOut(tween(200))
@@ -174,255 +104,11 @@ fun NavGraphBuilder.navigationBuilder(
                 fadeIn(tween(250)) + slideInHorizontally { -it / 2 }
             }
         },
-        popExitTransition = {
-            fadeOut(tween(200))
-        },
+        popExitTransition = { fadeOut(tween(200)) },
     ) { backStackEntry ->
         OnlineSearchResult(
             navController = navController,
-            savedStateHandle = backStackEntry.savedStateHandle
-        )
-
-    }
-
-    composable(
-        route = "album/{albumId}",
-        arguments =
-            listOf(
-                navArgument("albumId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        AlbumScreen(navController)
-    }
-
-    composable(
-        route = "artist/{artistId}?isPodcastChannel={isPodcastChannel}",
-        arguments =
-            listOf(
-                navArgument("artistId") {
-                    type = NavType.StringType
-                },
-                navArgument("isPodcastChannel") {
-                    type = NavType.BoolType
-                    defaultValue = false
-                },
-            ),
-    ) {
-        ArtistScreen(navController)
-    }
-
-    composable(
-        route = "artist/{artistId}/songs",
-        arguments =
-            listOf(
-                navArgument("artistId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        ArtistSongsScreen(navController)
-    }
-
-    composable(
-        route = "artist/{artistId}/albums",
-        arguments =
-            listOf(
-                navArgument("artistId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        ArtistAlbumsScreen(navController, scrollBehavior)
-    }
-
-    composable(
-        route = "artist/{artistId}/items?browseId={browseId}?params={params}",
-        arguments =
-            listOf(
-                navArgument("artistId") {
-                    type = NavType.StringType
-                },
-                navArgument("browseId") {
-                    type = NavType.StringType
-                    nullable = true
-                },
-                navArgument("params") {
-                    type = NavType.StringType
-                    nullable = true
-                },
-            ),
-    ) {
-        ArtistItemsScreen(navController)
-    }
-
-    composable(
-        route = "online_playlist/{playlistId}",
-        arguments =
-            listOf(
-                navArgument("playlistId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        OnlinePlaylistScreen(navController)
-    }
-
-    composable(
-        route = "online_podcast/{podcastId}",
-        arguments =
-            listOf(
-                navArgument("podcastId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        OnlinePodcastScreen(navController, scrollBehavior)
-    }
-
-    composable(
-        route = "local_playlist/{playlistId}",
-        arguments =
-            listOf(
-                navArgument("playlistId") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        LocalPlaylistScreen(navController)
-    }
-
-    composable(
-        route = "auto_playlist/{playlist}",
-        arguments =
-            listOf(
-                navArgument("playlist") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        AutoPlaylistScreen(navController)
-    }
-
-    composable(
-        route = "cache_playlist/{playlist}",
-        arguments =
-            listOf(
-                navArgument("playlist") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        CachePlaylistScreen(navController)
-    }
-
-    composable(
-        route = "top_playlist/{top}",
-        arguments =
-            listOf(
-                navArgument("top") {
-                    type = NavType.StringType
-                },
-            ),
-    ) {
-        TopPlaylistScreen(navController)
-    }
-
-    composable(
-        route = "youtube_browse/{browseId}?params={params}",
-        arguments =
-            listOf(
-                navArgument("browseId") {
-                    type = NavType.StringType
-                    nullable = true
-                },
-                navArgument("params") {
-                    type = NavType.StringType
-                    nullable = true
-                },
-            ),
-    ) {
-        YouTubeBrowseScreen(navController)
-    }
-
-    composable("settings") {
-        SettingsScreen(navController, latestVersionName)
-    }
-
-    composable("settings/appearance") {
-        AppearanceSettings(navController, activity, snackbarHostState)
-    }
-
-    composable("settings/appearance/theme") {
-        ThemeScreen(navController)
-    }
-
-    composable("settings/content") {
-        ContentSettings(navController)
-    }
-
-    composable("settings/content/romanization") {
-        RomanizationSettings(navController)
-    }
-
-    composable("settings/ai") {
-        AiSettings(navController)
-    }
-
-    composable("settings/player") {
-        PlayerSettings(navController)
-    }
-
-    composable("settings/storage") {
-        StorageSettings(navController)
-    }
-
-    composable("settings/privacy") {
-        PrivacySettings(navController)
-    }
-
-    composable("settings/backup_restore") {
-        BackupAndRestore(navController)
-    }
-
-    composable("settings/integrations") {
-        IntegrationScreen(navController)
-    }
-
-    composable("settings/integrations/discord") {
-        DiscordSettings(navController, snackbarHostState)
-    }
-
-    composable("settings/integrations/lastfm") {
-        LastFMSettings(navController)
-    }
-
-    composable(route = "settings/integrations/listen_together") {
-        ListenTogetherSettings(navController)
-    }
-
-    composable("settings/discord/login") {
-        DiscordLoginScreen(navController)
-    }
-
-    composable("settings/updater") {
-        UpdaterScreen(navController)
-    }
-
-    composable("settings/about") {
-        AboutScreen(navController)
-    }
-
-    composable("login") {
-        LoginScreen(navController)
-    }
-
-    composable("account_settings") {
-        AccountSettings(
-            navController = navController,
-            onClose = { navController.navigateUp() },
-            latestVersionName = latestVersionName,
+            savedStateHandle = backStackEntry.savedStateHandle,
         )
     }
 
@@ -434,23 +120,34 @@ fun NavGraphBuilder.navigationBuilder(
         EqScreen()
     }
 
-    composable(
-        route = "recognition?autoStart={autoStart}",
-        arguments =
-            listOf(
-                navArgument("autoStart") {
-                    type = NavType.BoolType
-                    defaultValue = false
-                },
-            ),
-    ) {
-        RecognitionScreen(navController, it.arguments?.getBoolean("autoStart") ?: false)
-    }
+    // Home screen graph
+    homeScreenGraph(
+        navController = navController,
+    )
 
-    composable("recognition_history") {
-        RecognitionHistoryScreen(navController)
-    }
-    composable("settings/android_auto") {
-        AndroidAutoSettings(navController, scrollBehavior)
-    }
+    // Library screen graph
+    libraryScreenGraph(
+        navController = navController,
+    )
+
+    // List screen graph
+    listScreenGraph(
+        navController = navController,
+        scrollBehavior = scrollBehavior,
+    )
+
+    // Login screen graph
+    loginScreenGraph(
+        navController = navController,
+        latestVersionName = latestVersionName,
+    )
+
+    // Settings screen graph
+    settingsScreenGraph(
+        navController = navController,
+        scrollBehavior = scrollBehavior,
+        latestVersionName = latestVersionName,
+        activity = activity,
+        snackbarHostState = snackbarHostState,
+    )
 }
