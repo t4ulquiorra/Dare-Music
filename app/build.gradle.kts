@@ -288,4 +288,5 @@ dependencies {
 
     implementation(libs.timber)
     implementation("io.github.kyant0:backdrop:1.0.6")
+    implementation("androidx.constraintlayout:constraintlayout-compose:1.1.1")
 }
