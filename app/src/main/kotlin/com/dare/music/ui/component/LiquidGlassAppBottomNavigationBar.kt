@@ -7,6 +7,7 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
+import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -326,7 +327,8 @@ fun LiquidGlassAppBottomNavigationBar(
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .height(56.dp)
-                .layoutId("miniPlayer"),
+                .layoutId("miniPlayer")
+                .clickable { onOpenNowPlaying() },
             positionState = positionState,
             durationState = durationState,
             backdrop = backdrop,
