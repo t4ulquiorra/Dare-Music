@@ -80,6 +80,7 @@ import androidx.media3.common.Player
 import androidx.palette.graphics.Palette
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
+import coil3.request.allowHardware
 import coil3.toBitmap
 import com.dare.music.LocalDatabase
 import com.dare.music.LocalPlayerConnection
