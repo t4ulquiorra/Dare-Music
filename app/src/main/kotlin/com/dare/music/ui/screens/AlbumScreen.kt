@@ -287,7 +287,8 @@ fun AlbumScreen(
                                     model = ImageRequest.Builder(context)
                                         .data(aws.album.thumbnailUrl)
                                         .crossfade(true)
-                                        .build(),
+                .allowHardware(false)
+                .build(),
                                     contentDescription = null,
                                     contentScale       = ContentScale.FillHeight,
                                     modifier           = Modifier
@@ -510,7 +511,9 @@ fun AlbumScreen(
                                         ) {
                                             Column(Modifier.padding(10.dp)) {
                                                 AsyncImage(
-                                                    model = ImageRequest.Builder(context).data(album.thumbnail).crossfade(true).build(),
+                                                    model = ImageRequest.Builder(context).data(album.thumbnail).crossfade(true)
+                .allowHardware(false)
+                .build(),
                                                     contentDescription = null,
                                                     contentScale       = ContentScale.Crop,
                                                     modifier           = Modifier.size(180.dp).clip(RoundedCornerShape(10.dp)),

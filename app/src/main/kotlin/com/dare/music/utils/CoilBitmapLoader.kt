@@ -72,6 +72,7 @@ class CoilBitmapLoader(
                 is SuccessResult -> {
                     try {
                         val bitmap = result.image.toBitmap()
+                            .copy(android.graphics.Bitmap.Config.ARGB_8888, false)
                         bitmap.copyIfNeeded()
                     } catch (e: Exception) {
                         Timber.tag("CoilBitmapLoader").w(e, "Failed to convert image to bitmap")

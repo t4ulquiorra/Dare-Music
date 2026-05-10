@@ -177,7 +177,8 @@ fun LyricsImageCard(
         ImageRequest.Builder(context)
             .data(mediaMetadata.thumbnailUrl)
             .crossfade(false)
-            .build()
+                .allowHardware(false)
+                .build()
     )
     
     // Calculate gradient colors if needed

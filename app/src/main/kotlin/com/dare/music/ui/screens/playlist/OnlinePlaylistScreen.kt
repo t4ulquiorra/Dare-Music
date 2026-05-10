@@ -308,7 +308,9 @@ fun OnlinePlaylistScreen(
                                         Column(horizontalAlignment = Alignment.Start) {
                                             // Playlist art 250dp (exact Xevrae)
                                             AsyncImage(
-                                                model = ImageRequest.Builder(context).data(pl.thumbnail).crossfade(true).build(),
+                                                model = ImageRequest.Builder(context).data(pl.thumbnail).crossfade(true)
+                .allowHardware(false)
+                .build(),
                                                 contentDescription = null,
                                                 contentScale       = ContentScale.FillHeight,
                                                 modifier           = Modifier
@@ -651,7 +653,9 @@ private fun XevPlaylistSongRow(
                     Icon(painterResource(R.drawable.pause), null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 } else {
                     AsyncImage(
-                        model = ImageRequest.Builder(context).data(thumbnail).crossfade(true).build(),
+                        model = ImageRequest.Builder(context).data(thumbnail).crossfade(true)
+                .allowHardware(false)
+                .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)),

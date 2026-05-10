@@ -599,7 +599,9 @@ private fun AccountLayout(accountName: String, url: String?) {
             modifier          = Modifier.padding(horizontal = 5.dp, vertical = 5.dp),
         ) {
             AsyncImage(
-                model              = ImageRequest.Builder(context).data(url).crossfade(true).build(),
+                model              = ImageRequest.Builder(context).data(url).crossfade(true)
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier.size(40.dp).clip(CircleShape),
@@ -688,7 +690,8 @@ private fun DareQuickPicksItem(
                 model = ImageRequest.Builder(context)
                     .data(song.thumbnailUrl)
                     .crossfade(true)
-                    .build(),
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier
@@ -847,7 +850,8 @@ private fun DareHomeItemSong(
                 model = ImageRequest.Builder(context)
                     .data(item.thumbnail)
                     .crossfade(true)
-                    .build(),
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier
@@ -903,7 +907,8 @@ private fun DareHomeItemContentPlaylist(
                 model = ImageRequest.Builder(context)
                     .data(thumbnail)
                     .crossfade(true)
-                    .build(),
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier
@@ -955,7 +960,8 @@ private fun DareHomeItemArtist(
                 model = ImageRequest.Builder(context)
                     .data(item.thumbnail)
                     .crossfade(true)
-                    .build(),
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier

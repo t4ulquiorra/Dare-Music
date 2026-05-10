@@ -114,6 +114,7 @@ import androidx.palette.graphics.Palette
 import coil3.compose.AsyncImage
 import coil3.request.ImageRequest
 import coil3.request.crossfade
+import coil3.request.allowHardware
 import coil3.toBitmap
 import com.dare.innertube.models.AlbumItem
 import com.dare.innertube.models.ArtistItem
@@ -491,7 +492,8 @@ private fun XevCollapsingToolbar(
                 model = ImageRequest.Builder(context)
                     .data(imageUrl)
                     .crossfade(true)
-                    .build(),
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 onSuccess          = { state ->
@@ -734,7 +736,9 @@ private fun XevSongRow(
                     Icon(painterResource(R.drawable.pause), null, tint = MaterialTheme.colorScheme.primary, modifier = Modifier.size(24.dp))
                 } else {
                     AsyncImage(
-                        model = ImageRequest.Builder(context).data(thumbnail).crossfade(true).build(),
+                        model = ImageRequest.Builder(context).data(thumbnail).crossfade(true)
+                .allowHardware(false)
+                .build(),
                         contentDescription = null,
                         contentScale = ContentScale.Crop,
                         modifier = Modifier.fillMaxSize().clip(RoundedCornerShape(4.dp)),
@@ -796,7 +800,9 @@ private fun XevContentItem(
     ) {
         Column(Modifier.padding(10.dp)) {
             AsyncImage(
-                model = ImageRequest.Builder(context).data(thumbnail).crossfade(true).build(),
+                model = ImageRequest.Builder(context).data(thumbnail).crossfade(true)
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier
@@ -849,7 +855,9 @@ private fun XevArtistItem(
     ) {
         Column(Modifier.padding(10.dp)) {
             AsyncImage(
-                model = ImageRequest.Builder(context).data(thumbnail).crossfade(true).build(),
+                model = ImageRequest.Builder(context).data(thumbnail).crossfade(true)
+                .allowHardware(false)
+                .build(),
                 contentDescription = null,
                 contentScale       = ContentScale.Crop,
                 modifier           = Modifier
