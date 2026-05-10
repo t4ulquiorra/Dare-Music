@@ -789,7 +789,6 @@ class MainActivity : ComponentActivity() {
                                     },
                                     isScrolledToTop  = isScrolledToTop,
                                 )
-                            }
                         },
                         modifier = Modifier
                             .fillMaxSize()
@@ -837,6 +836,16 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
+
+                    BottomSheetPlayer(
+                        state         = playerBottomSheetState,
+                        navController = navController,
+                        pureBlack     = pureBlack,
+                        positionState = remember { mutableLongStateOf(0L) },
+                        durationState = remember { mutableLongStateOf(0L) },
+                        backdrop      = glassBackdrop,
+                        modifier      = Modifier.align(Alignment.BottomCenter),
+                    )
 
                     BottomSheetMenu(
                         state    = LocalMenuState.current,

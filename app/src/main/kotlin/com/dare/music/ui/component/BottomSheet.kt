@@ -195,7 +195,7 @@ class BottomSheetState(
         collapse(SpringSpec())
     }
 
-    private fun expand() {
+    fun expand() {
         expand(SpringSpec())
     }
 
