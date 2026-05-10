@@ -7,7 +7,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,7 +42,6 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
-import androidx.compose.runtime.derivedStateOf
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -79,7 +77,6 @@ import java.nio.IntBuffer
 import kotlin.time.Duration.Companion.seconds
 import androidx.compose.ui.graphics.lerp as colorLerp
 
-// Tab ordinals
 private const val TAB_HOME    = 0
 private const val TAB_SEARCH  = 1
 private const val TAB_LIBRARY = 2
@@ -89,7 +86,6 @@ private const val TAB_LIBRARY = 2
 fun LiquidGlassAppBottomNavigationBar(
     navController: NavController,
     backdrop: Backdrop,
-    // Pass Screens.MainScreens.take(3) — must be [Home, Search, Library] in that order
     bottomNavScreens: List<Screens>,
     currentRoute: String?,
     onItemClick: (Screens, Boolean) -> Unit,
@@ -101,7 +97,6 @@ fun LiquidGlassAppBottomNavigationBar(
     val layer         = rememberGraphicsLayer()
     val luminanceAnim = remember { Animatable(0f) }
 
-    // Luminance-aware pill colour — same logic as Xevrae
     val pillColor by animateColorAsState(
         targetValue = colorLerp(
             MaterialTheme.colorScheme.surfaceVariant,
@@ -112,7 +107,6 @@ fun LiquidGlassAppBottomNavigationBar(
         label = "PillColor",
     )
 
-    // Sample background luminance every second to drive colour animation
     LaunchedEffect(layer) {
         val buffer = IntBuffer.allocate(25)
         while (isActive) {
@@ -126,22 +120,21 @@ fun LiquidGlassAppBottomNavigationBar(
                     bmp.copyPixelsToBuffer(buffer)
                 }
             } catch (_: Exception) {}
-            val avg = (0 until 25).sumOf { i ->
+            val avg = (0 until 25).fold(0.0) { acc, i ->
                 val c = buffer.get(i)
                 val r = (c shr 16 and 0xFF) / 255.0
                 val g = (c shr  8 and 0xFF) / 255.0
                 val b = (c        and 0xFF) / 255.0
-                0.2126 * r + 0.7152 * g + 0.0722 * b
+                acc + 0.2126 * r + 0.7152 * g + 0.0722 * b
             } / 25.0
             luminanceAnim.animateTo(avg.coerceAtMost(0.8).toFloat(), tween(500))
             delay(1.seconds)
         }
     }
 
-    // ── Nav state ────────────────────────────────────────────────────────────
     fun routeToIndex(route: String?): Int = when {
         route == null -> TAB_HOME
-        route == bottomNavScreens.getOrNull(TAB_HOME)?.route    -> TAB_HOME
+        route == bottomNavScreens.getOrNull(TAB_HOME)?.route -> TAB_HOME
         route.startsWith(bottomNavScreens.getOrNull(TAB_SEARCH)?.route.orEmpty()) -> TAB_SEARCH
         route == bottomNavScreens.getOrNull(TAB_LIBRARY)?.route -> TAB_LIBRARY
         else -> TAB_HOME
@@ -159,20 +152,18 @@ fun LiquidGlassAppBottomNavigationBar(
     }
 
     val isInSearchDestination = remember(currentRoute) {
-        currentRoute?.startsWith(
-            bottomNavScreens.getOrNull(TAB_SEARCH)?.route.orEmpty()
-        ) == true
+        currentRoute?.startsWith(bottomNavScreens.getOrNull(TAB_SEARCH)?.route.orEmpty()) == true
     }
 
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(isInSearchDestination) { isExpanded = !isInSearchDestination }
-    LaunchedEffect(isScrolledToTop)       { if (!isInSearchDestination) isExpanded = isScrolledToTop }
+    LaunchedEffect(isScrolledToTop) { if (!isInSearchDestination) isExpanded = isScrolledToTop }
 
-    // ── ConstraintSet ────────────────────────────────────────────────────────
-    // Mini-player visibility: show whenever LocalPlayerConnection has a current song.
-    // DareMiniPlayer returns early when currentSong == null so Gone/Visible is cosmetic.
-    var updateConstraints by remember { mutableStateOf(true) }
-    var constraintSet     by remember { mutableStateOf(buildConstraintSet(showMiniPlayer = true, isExpanded = isExpanded)) }
+    // Explicit types avoid T-inference errors with ConstraintSet
+    var updateConstraints: Boolean by remember { mutableStateOf(true) }
+    var constraintSet: ConstraintSet by remember {
+        mutableStateOf(buildConstraintSet(showMiniPlayer = true, isExpanded = isExpanded))
+    }
 
     LaunchedEffect(isExpanded) {
         constraintSet = buildConstraintSet(showMiniPlayer = true, isExpanded = isExpanded)
@@ -198,9 +189,8 @@ fun LiquidGlassAppBottomNavigationBar(
             .padding(WindowInsets.navigationBars.asPaddingValues())
             .padding(bottom = 8.dp)
             .imePadding(),
-        animateChangesSpec = tween(300),
+        animateChangesSpec = tween<Float>(300),
     ) {
-        // ── Toolbar pill ─────────────────────────────────────────────────────
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -210,11 +200,8 @@ fun LiquidGlassAppBottomNavigationBar(
         ) {
             HorizontalFloatingToolbar(
                 modifier = Modifier
-                    // TODO: uncomment once drawBackdropCustomShape is extracted
-                    // .drawBackdropCustomShape(backdrop, layer, luminanceAnim.value, CircleShape)
-                    .then(
-                        if (!isExpanded) Modifier.size(48.dp) else Modifier.wrapContentSize()
-                    )
+                    // TODO: .drawBackdropCustomShape(backdrop, layer, luminanceAnim.value, CircleShape)
+                    .then(if (!isExpanded) Modifier.size(48.dp) else Modifier.wrapContentSize())
                     .onGloballyPositioned { updateConstraints = true },
                 contentPadding = PaddingValues(horizontal = if (isExpanded) 4.dp else 0.dp),
                 colors = FloatingToolbarDefaults
@@ -223,8 +210,6 @@ fun LiquidGlassAppBottomNavigationBar(
                 expanded = isExpanded,
                 trailingContent = {
                     var buttonSize by remember { mutableStateOf(0.dp to 0.dp) }
-
-                    // Home + Library only — Search is the separate FAB
                     bottomNavScreens
                         .filterIndexed { index, _ -> index != TAB_SEARCH }
                         .forEach { screen ->
@@ -260,18 +245,14 @@ fun LiquidGlassAppBottomNavigationBar(
                                         )
                                         Text(
                                             text = stringResource(
-                                                if (idx == TAB_HOME) R.string.home else R.string.filter_library
+                                                if (idx == TAB_HOME) R.string.home else R.string.filter_library,
                                             ),
                                             style = if (selectedIndex == idx) {
                                                 MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
                                             } else {
                                                 MaterialTheme.typography.bodySmall
                                             },
-                                            color = if (selectedIndex == idx) {
-                                                MaterialTheme.colorScheme.primary
-                                            } else {
-                                                Color.White
-                                            },
+                                            color = if (selectedIndex == idx) MaterialTheme.colorScheme.primary else Color.White,
                                         )
                                     }
                                 }
@@ -279,7 +260,6 @@ fun LiquidGlassAppBottomNavigationBar(
                         }
                 },
             ) {
-                // Collapsed icon — selected tab icon, or home/library when in Search
                 if (!isExpanded) {
                     IconButton(
                         modifier = Modifier.size(FloatingToolbarDefaults.ContainerSize.value.dp),
@@ -302,10 +282,7 @@ fun LiquidGlassAppBottomNavigationBar(
                         Icon(
                             imageVector = when (selectedIndex) {
                                 TAB_HOME    -> Icons.Rounded.Home
-                                TAB_SEARCH  -> when (previousSelectedIndex) {
-                                    TAB_LIBRARY -> Icons.Rounded.LibraryMusic
-                                    else        -> Icons.Rounded.Home
-                                }
+                                TAB_SEARCH  -> if (previousSelectedIndex == TAB_LIBRARY) Icons.Rounded.LibraryMusic else Icons.Rounded.Home
                                 TAB_LIBRARY -> Icons.Rounded.LibraryMusic
                                 else        -> Icons.Outlined.Home
                             },
@@ -317,17 +294,14 @@ fun LiquidGlassAppBottomNavigationBar(
 
             if (isExpanded) Spacer(Modifier.size(12.dp))
 
-            // Search FAB
             AnimatedVisibility(
                 visible = !isInSearchDestination && isExpanded,
                 enter = slideInHorizontally(tween(100)) { it / 2 },
                 exit  = slideOutHorizontally(tween(100)) { -it / 2 },
             ) {
                 FloatingActionButton(
-                    modifier = Modifier
-                        // TODO: uncomment once drawBackdropCustomShape is extracted
-                        // .drawBackdropCustomShape(backdrop, layer, luminanceAnim.value, CircleShape)
-                        ,
+                    modifier = Modifier,
+                    // TODO: .drawBackdropCustomShape(backdrop, layer, luminanceAnim.value, CircleShape)
                     elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
                     onClick = {
                         previousSelectedIndex = selectedIndex
@@ -343,7 +317,6 @@ fun LiquidGlassAppBottomNavigationBar(
             }
         }
 
-        // ── Mini-player ──────────────────────────────────────────────────────
         DareMiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
@@ -356,7 +329,6 @@ fun LiquidGlassAppBottomNavigationBar(
     }
 }
 
-// Direct port of Xevrae's decoupledConstraints
 private fun buildConstraintSet(
     showMiniPlayer: Boolean,
     isExpanded: Boolean,

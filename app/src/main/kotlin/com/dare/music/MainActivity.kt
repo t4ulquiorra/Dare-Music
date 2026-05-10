@@ -204,15 +204,15 @@ import javax.inject.Inject
 @AndroidEntryPoint
 class MainActivity : ComponentActivity() {
     companion object {
-        private const val ACTION_SEARCH       = "com.dare.music.action.SEARCH"
-        private const val ACTION_LIBRARY      = "com.dare.music.action.LIBRARY"
-        const val ACTION_RECOGNITION          = "com.dare.music.action.RECOGNITION"
+        private const val ACTION_SEARCH        = "com.dare.music.action.SEARCH"
+        private const val ACTION_LIBRARY       = "com.dare.music.action.LIBRARY"
+        const val ACTION_RECOGNITION           = "com.dare.music.action.RECOGNITION"
         const val EXTRA_AUTO_START_RECOGNITION = "auto_start_recognition"
     }
 
-    @Inject lateinit var database:             MusicDatabase
-    @Inject lateinit var downloadUtil:         DownloadUtil
-    @Inject lateinit var syncUtils:            SyncUtils
+    @Inject lateinit var database:              MusicDatabase
+    @Inject lateinit var downloadUtil:          DownloadUtil
+    @Inject lateinit var syncUtils:             SyncUtils
     @Inject lateinit var listenTogetherManager: com.dare.music.listentogether.ListenTogetherManager
 
     private lateinit var navController: NavHostController
@@ -299,8 +299,11 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (::navController.isInitialized) handleDeepLinkIntent(intent, navController)
-        else pendingIntent = intent
+        if (::navController.isInitialized) {
+            handleDeepLinkIntent(intent, navController)
+        } else {
+            pendingIntent = intent
+        }
     }
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -341,7 +344,7 @@ class MainActivity : ComponentActivity() {
     }
 
     // =========================================================================
-    // DareApp
+    // DareApp composable
     // =========================================================================
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -397,8 +400,8 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val enableDynamicTheme    by rememberPreference(DynamicThemeKey,          defaultValue = true)
-        val enableHighRefreshRate by rememberPreference(EnableHighRefreshRateKey,  defaultValue = true)
+        val enableDynamicTheme    by rememberPreference(DynamicThemeKey,         defaultValue = true)
+        val enableHighRefreshRate by rememberPreference(EnableHighRefreshRateKey, defaultValue = true)
 
         LaunchedEffect(enableHighRefreshRate) {
             val win = this@MainActivity.window
@@ -420,9 +423,9 @@ class MainActivity : ComponentActivity() {
             }
         }
 
-        val darkTheme     by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
-        val isSystemDark   = isSystemInDarkTheme()
-        val useDarkTheme   = remember(darkTheme, isSystemDark) {
+        val darkTheme    by rememberEnumPreference(DarkModeKey, defaultValue = DarkMode.AUTO)
+        val isSystemDark  = isSystemInDarkTheme()
+        val useDarkTheme  = remember(darkTheme, isSystemDark) {
             if (darkTheme == DarkMode.AUTO) isSystemDark else darkTheme == DarkMode.ON
         }
         LaunchedEffect(useDarkTheme) { setSystemBarAppearance(useDarkTheme) }
@@ -498,7 +501,7 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                val homeViewModel:  HomeViewModel  = hiltViewModel()
+                val homeViewModel:   HomeViewModel = hiltViewModel()
                 val accountImageUrl by homeViewModel.accountImageUrl.collectAsState()
                 val navBackStackEntry by navController.currentBackStackEntryAsState()
                 val (previousTab, setPreviousTab) = rememberSaveable { mutableStateOf("home") }
@@ -525,36 +528,22 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(TextFieldValue())
                 }
 
-                val onSearch: (String) -> Unit = remember {
-                    { q ->
-                        if (q.isNotEmpty()) {
-                            navController.navigate("search/${URLEncoder.encode(q, "UTF-8")}")
-                            if (dataStore[PauseSearchHistoryKey] != true) {
-                                lifecycleScope.launch(Dispatchers.IO) {
-                                    database.query { insert(SearchHistory(query = q)) }
-                                }
-                            }
-                        }
-                    }
-                }
-
                 val currentRoute   by remember { derivedStateOf { navBackStackEntry?.destination?.route } }
                 val inSearchScreen by remember { derivedStateOf { currentRoute?.startsWith("search/") == true } }
 
                 val shouldShowNavigationBar = remember(currentRoute) { currentRoute != "wrapped" }
                 val showRail                = false
 
-                // isScrolledToTop — set by individual screens via:
-                //   navController.currentBackStackEntry?.savedStateHandle?.set("isScrolledToTop", true/false)
                 val isScrolledToTop by remember(navBackStackEntry) {
                     derivedStateOf {
                         navBackStackEntry?.savedStateHandle?.get<Boolean>("isScrolledToTop") ?: true
                     }
                 }
 
-                // BottomSheetPlayer is expanded-only; DareMiniPlayer (inside the glass
-                // nav bar) is the mini-player. collapsedBound = 1.dp keeps the state
-                // machine valid while making the collapsed peek effectively invisible.
+                // Hoisted here so BottomSheetPlayer can be placed outside Scaffold
+                val positionState = remember { mutableLongStateOf(0L) }
+                val durationState = remember { mutableLongStateOf(0L) }
+
                 val playerBottomSheetState = rememberBottomSheetState(
                     dismissedBound = 0.dp,
                     collapsedBound = 1.dp,
@@ -602,7 +591,7 @@ class MainActivity : ComponentActivity() {
                     val player = playerConnection?.player ?: return@DisposableEffect onDispose {}
                     val listener = object : Player.Listener {
                         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                            // Expansion is triggered explicitly by DareMiniPlayer tap
+                            // Expansion triggered by tapping DareMiniPlayer
                         }
                     }
                     player.addListener(listener)
@@ -644,11 +633,11 @@ class MainActivity : ComponentActivity() {
 
                 val currentTitleRes = remember(navBackStackEntry) {
                     when (navBackStackEntry?.destination?.route) {
-                        Screens.Home.route          -> null
-                        Screens.Search.route        -> R.string.search
-                        Screens.Library.route       -> R.string.filter_library
+                        Screens.Home.route           -> null
+                        Screens.Search.route         -> R.string.search
+                        Screens.Library.route        -> R.string.filter_library
                         Screens.ListenTogether.route -> R.string.together
-                        else                        -> null
+                        else                         -> null
                     }
                 }
 
@@ -656,7 +645,6 @@ class MainActivity : ComponentActivity() {
                 val pauseListenHistory by rememberPreference(PauseListenHistoryKey, defaultValue = false)
                 val eventCount         by database.eventCount().collectAsState(initial = 0)
 
-                val baseBg        = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer
                 val glassBackdrop = rememberLayerBackdrop()
 
                 CompositionLocalProvider(
@@ -763,32 +751,19 @@ class MainActivity : ComponentActivity() {
                                 }
                             }
 
-                            Box {
-                                // Full-screen player — expanded only.
-                                // Tap DareMiniPlayer → onOpenNowPlaying → expand().
-                                BottomSheetPlayer(
-                                    state         = playerBottomSheetState,
-                                    navController = navController,
-                                    pureBlack     = pureBlack,
-                                    positionState = remember { mutableLongStateOf(0L) },
-                                    durationState = remember { mutableLongStateOf(0L) },
-                                    backdrop      = glassBackdrop,
-                                    modifier      = Modifier,
-                                )
-
-                                LiquidGlassAppBottomNavigationBar(
-                                    navController    = navController,
-                                    backdrop         = glassBackdrop,
-                                    bottomNavScreens = navigationItems.take(3),
-                                    currentRoute     = currentRoute,
-                                    onItemClick      = onNavItemClick,
-                                    onOpenNowPlaying = { playerBottomSheetState.expandSoft() },
-                                    onStopPlayer     = {
-                                        playerConnection?.player?.stop()
-                                        playerConnection?.player?.clearMediaItems()
-                                    },
-                                    isScrolledToTop  = isScrolledToTop,
-                                )
+                            LiquidGlassAppBottomNavigationBar(
+                                navController    = navController,
+                                backdrop         = glassBackdrop,
+                                bottomNavScreens = navigationItems.take(3),
+                                currentRoute     = currentRoute,
+                                onItemClick      = onNavItemClick,
+                                onOpenNowPlaying = { playerBottomSheetState.expand() },
+                                onStopPlayer     = {
+                                    playerConnection?.player?.stop()
+                                    playerConnection?.player?.clearMediaItems()
+                                },
+                                isScrolledToTop  = isScrolledToTop,
+                            )
                         },
                         modifier = Modifier
                             .fillMaxSize()
@@ -818,7 +793,6 @@ class MainActivity : ComponentActivity() {
                                     },
                                 )
                             }
-
                             Box(Modifier.weight(1f).layerBackdrop(glassBackdrop)) {
                                 AppNavigationGraph(
                                     navController     = navController,
@@ -835,17 +809,22 @@ class MainActivity : ComponentActivity() {
                                 )
                             }
                         }
-                    }
+                    } // end Scaffold
 
-                    BottomSheetPlayer(
-                        state         = playerBottomSheetState,
-                        navController = navController,
-                        pureBlack     = pureBlack,
-                        positionState = remember { mutableLongStateOf(0L) },
-                        durationState = remember { mutableLongStateOf(0L) },
-                        backdrop      = glassBackdrop,
-                        modifier      = Modifier.align(Alignment.BottomCenter),
-                    )
+                    // ── Overlays ─────────────────────────────────────────────
+                    // BottomSheetPlayer lives OUTSIDE Scaffold so it never
+                    // inflates the bottomBar measurement height.
+                    if (currentRoute != "wrapped") {
+                        BottomSheetPlayer(
+                            state         = playerBottomSheetState,
+                            navController = navController,
+                            pureBlack     = pureBlack,
+                            positionState = positionState,
+                            durationState = durationState,
+                            backdrop      = glassBackdrop,
+                            modifier      = Modifier.align(Alignment.BottomCenter),
+                        )
+                    }
 
                     BottomSheetMenu(
                         state    = LocalMenuState.current,
@@ -887,13 +866,13 @@ class MainActivity : ComponentActivity() {
                             }
                         }
                     }
-                }
-            }
-        }
-    }
+                } // end CompositionLocalProvider
+            } // end BoxWithConstraints
+        } // end DareTheme
+    } // end DareApp
 
     // =========================================================================
-    // Intent handlers (unchanged)
+    // Class-level private helpers
     // =========================================================================
 
     private fun handleRecognitionIntent(intent: Intent, navController: NavHostController) {
@@ -996,14 +975,18 @@ class MainActivity : ComponentActivity() {
             window.navigationBarColor = (if (isDark) Color.Transparent else Color.Black.copy(alpha = 0.2f)).toArgb()
         }
     }
-}
+} // end MainActivity
 
-val LocalDatabase               = staticCompositionLocalOf<MusicDatabase>          { error("No database provided") }
-val LocalPlayerConnection       = staticCompositionLocalOf<PlayerConnection?>       { error("No PlayerConnection provided") }
-val LocalPlayerAwareWindowInsets = compositionLocalOf<WindowInsets>                { error("No WindowInsets provided") }
-val LocalDownloadUtil           = staticCompositionLocalOf<DownloadUtil>            { error("No DownloadUtil provided") }
-val LocalSyncUtils              = staticCompositionLocalOf<SyncUtils>               { error("No SyncUtils provided") }
+// =============================================================================
+// Composition locals
+// =============================================================================
+
+val LocalDatabase               = staticCompositionLocalOf<MusicDatabase>         { error("No database provided") }
+val LocalPlayerConnection       = staticCompositionLocalOf<PlayerConnection?>      { error("No PlayerConnection provided") }
+val LocalPlayerAwareWindowInsets = compositionLocalOf<WindowInsets>               { error("No WindowInsets provided") }
+val LocalDownloadUtil           = staticCompositionLocalOf<DownloadUtil>           { error("No DownloadUtil provided") }
+val LocalSyncUtils              = staticCompositionLocalOf<SyncUtils>              { error("No SyncUtils provided") }
 val LocalListenTogetherManager  = staticCompositionLocalOf<com.dare.music.listentogether.ListenTogetherManager?> { null }
-val LocalChangelogState         = staticCompositionLocalOf<MutableState<Boolean>>   { error("No LocalChangelogState provided") }
+val LocalChangelogState         = staticCompositionLocalOf<MutableState<Boolean>>  { error("No LocalChangelogState provided") }
 val LocalIsPlayerExpanded       = compositionLocalOf { false }
-val LocalGlassBackdrop          = staticCompositionLocalOf<Backdrop?>               { null }
+val LocalGlassBackdrop          = staticCompositionLocalOf<Backdrop?>              { null }
