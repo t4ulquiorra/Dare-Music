@@ -754,6 +754,8 @@ class MainActivity : ComponentActivity() {
                             LiquidGlassAppBottomNavigationBar(
                                 navController    = navController,
                                 backdrop         = glassBackdrop,
+                positionState    = positionState,
+                durationState    = durationState,
                                 bottomNavScreens = navigationItems.take(3),
                                 currentRoute     = currentRoute,
                                 onItemClick      = onNavItemClick,

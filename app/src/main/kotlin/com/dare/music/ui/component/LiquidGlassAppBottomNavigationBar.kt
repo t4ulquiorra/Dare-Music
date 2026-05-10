@@ -69,6 +69,8 @@ import androidx.navigation.compose.currentBackStackEntryAsState
 import com.dare.music.R
 import com.dare.music.ui.screens.Screens
 import com.kyant.backdrop.Backdrop
+import androidx.compose.runtime.MutableLongState
+import com.dare.music.ui.player.MiniPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.isActive
@@ -86,6 +88,8 @@ private const val TAB_LIBRARY = 2
 fun LiquidGlassAppBottomNavigationBar(
     navController: NavController,
     backdrop: Backdrop,
+    positionState: MutableLongState,
+    durationState: MutableLongState,
     bottomNavScreens: List<Screens>,
     currentRoute: String?,
     onItemClick: (Screens, Boolean) -> Unit,
@@ -317,14 +321,15 @@ fun LiquidGlassAppBottomNavigationBar(
             }
         }
 
-        DareMiniPlayer(
+        MiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .height(56.dp)
                 .layoutId("miniPlayer"),
-            onClick  = onOpenNowPlaying,
-            onClose  = onStopPlayer,
+            positionState = positionState,
+            durationState = durationState,
+            backdrop = backdrop,
         )
     }
 }
