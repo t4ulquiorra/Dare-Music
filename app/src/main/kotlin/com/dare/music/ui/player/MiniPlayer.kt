@@ -13,8 +13,9 @@ import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.Crossfade
 import androidx.compose.animation.SizeTransform
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.animateFloatAsState
+import androidx.compose.animation.core.animateFloatAsState
 import androidx.compose.animation.core.Animatable
+import androidx.compose.animation.Animatable as ColorAnimatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.fadeIn
 import androidx.compose.animation.fadeOut
@@ -120,7 +121,7 @@ fun MiniPlayer(
     val isLoading = playbackState == Player.STATE_BUFFERING
 
     // ── Palette-extracted card background ─────────────────────────────────
-    val background = remember { Animatable(Color.DarkGray) }
+    val background = remember { ColorAnimatable(Color.DarkGray) }
 
     // Derive text color from relative luminance so it always contrasts the background
     val luminance = remember(background.value) {
