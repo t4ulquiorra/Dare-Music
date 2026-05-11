@@ -79,8 +79,6 @@ import com.dare.music.constants.LyricsLineSpacingKey
 import com.dare.music.constants.LyricsScrollKey
 import com.dare.music.constants.LyricsTextPositionKey
 import com.dare.music.constants.LyricsTextSizeKey
-import com.dare.music.constants.MiniPlayerBackgroundStyle
-import com.dare.music.constants.MiniPlayerBackgroundStyleKey
 import com.dare.music.constants.PlayerBackgroundStyle
 import com.dare.music.constants.PlayerBackgroundStyleKey
 import com.dare.music.constants.PlayerButtonsStyle
@@ -101,7 +99,6 @@ import com.dare.music.constants.SwipeSensitivityKey
 import com.dare.music.constants.SwipeThumbnailKey
 import com.dare.music.constants.SwipeToRemoveSongKey
 import com.dare.music.constants.SwipeToSongKey
-import com.dare.music.constants.UseNewMiniPlayerDesignKey
 import com.dare.music.constants.UseNewPlayerDesignKey
 import com.dare.music.ui.component.DefaultDialog
 import com.dare.music.ui.component.EnumDialog
@@ -177,18 +174,8 @@ fun AppearanceSettings(
             UseNewPlayerDesignKey,
             defaultValue = true,
         )
-    val (miniPlayerBackground, onMiniPlayerBackgroundChange) =
-        rememberEnumPreference(
-            MiniPlayerBackgroundStyleKey,
-            defaultValue = MiniPlayerBackgroundStyle.DEFAULT,
-        )
-
-    val availableMiniPlayerBackgroundStyles =
-        MiniPlayerBackgroundStyle.entries.filter {
-            it != MiniPlayerBackgroundStyle.BLUR || Build.VERSION.SDK_INT >= Build.VERSION_CODES.S
-        }
-
-    var showMiniPlayerBackgroundDialog by rememberSaveable { mutableStateOf(false) }
+    val (miniPlayerLiquidGlass, onMiniPlayerLiquidGlassChange) =
+        rememberPreference(MiniPlayerLiquidGlassKey, defaultValue = false)
 
     val (useNewMiniPlayerDesign, onUseNewMiniPlayerDesignChange) =
         rememberPreference(
@@ -586,27 +573,6 @@ fun AppearanceSettings(
         )
     }
 
-    if (showMiniPlayerBackgroundDialog) {
-        EnumDialog(
-            onDismiss = { showMiniPlayerBackgroundDialog = false },
-            onSelect = {
-                onMiniPlayerBackgroundChange(it)
-                showMiniPlayerBackgroundDialog = false
-            },
-            title = stringResource(R.string.mini_player_background_style),
-            current = miniPlayerBackground,
-            values = availableMiniPlayerBackgroundStyles,
-            valueText = {
-                when (it) {
-                    MiniPlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                    MiniPlayerBackgroundStyle.TRANSPARENT -> stringResource(R.string.transparent)
-                    MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                    MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                    MiniPlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.pure_black)
-                }
-            },
-        )
-    }
 
     var showDefaultOpenTabDialog by rememberSaveable {
         mutableStateOf(false)
@@ -1019,23 +985,23 @@ fun AppearanceSettings(
                             icon = painterResource(R.drawable.gradient),
                             title = {
                                 Text(
-                                    text = stringResource(R.string.mini_player_background_style),
+                                    text = "Liquid glass mini player",
                                     color = MaterialTheme.colorScheme.onSurface,
                                 )
                             },
                             description = {
                                 Text(
-                                    text = when (miniPlayerBackground) {
-                                        MiniPlayerBackgroundStyle.DEFAULT -> stringResource(R.string.follow_theme)
-                                        MiniPlayerBackgroundStyle.TRANSPARENT -> stringResource(R.string.transparent)
-                                        MiniPlayerBackgroundStyle.BLUR -> stringResource(R.string.player_background_blur)
-                                        MiniPlayerBackgroundStyle.GRADIENT -> stringResource(R.string.gradient)
-                                        MiniPlayerBackgroundStyle.PURE_BLACK -> stringResource(R.string.pure_black)
-                                    },
+                                    text = if (miniPlayerLiquidGlass) "On" else "Off",
                                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                                 )
                             },
-                            onClick = { showMiniPlayerBackgroundDialog = true },
+                            trailingContent = {
+                                Switch(
+                                    checked = miniPlayerLiquidGlass,
+                                    onCheckedChange = onMiniPlayerLiquidGlassChange,
+                                )
+                            },
+                            onClick = { onMiniPlayerLiquidGlassChange(!miniPlayerLiquidGlass) },
                         ),
                     )
                 },

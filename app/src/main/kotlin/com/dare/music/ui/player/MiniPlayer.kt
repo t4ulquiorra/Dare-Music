@@ -85,11 +85,10 @@ import coil3.toBitmap
 import com.dare.music.LocalDatabase
 import com.dare.music.LocalPlayerConnection
 import com.dare.music.R
-import com.dare.music.constants.MiniPlayerBackgroundStyle
-import com.dare.music.constants.MiniPlayerBackgroundStyleKey
 import com.dare.music.constants.MiniPlayerHeight
+import com.dare.music.constants.MiniPlayerLiquidGlassKey
 import com.dare.music.extensions.togglePlayPause
-import com.dare.music.utils.rememberEnumPreference
+import com.dare.music.utils.rememberPreference
 import com.kyant.backdrop.Backdrop
 import com.kyant.backdrop.drawBackdrop
 import com.kyant.backdrop.effects.effect
@@ -107,21 +106,15 @@ fun MiniPlayer(
     backdrop: Backdrop? = null,
     modifier: Modifier = Modifier,
 ) {
-    val context = LocalContext.current
-    val density = LocalDensity.current
+    val context          = LocalContext.current
+    val density          = LocalDensity.current
     val playerConnection = LocalPlayerConnection.current ?: return
-    val database = LocalDatabase.current
-    val coroutineScope = rememberCoroutineScope()
+    val database         = LocalDatabase.current
+    val coroutineScope   = rememberCoroutineScope()
 
-    // ── Style preference (maps to Xevrae's isLiquidGlassEnabled) ─────────
-    val miniPlayerBackground by rememberEnumPreference(
-        MiniPlayerBackgroundStyleKey,
-        defaultValue = MiniPlayerBackgroundStyle.DEFAULT,
-    )
-    // Glass = TRANSPARENT style with a live backdrop available
-    val isGlass = miniPlayerBackground == MiniPlayerBackgroundStyle.TRANSPARENT && backdrop != null
+    val liquidGlassEnabled by rememberPreference(MiniPlayerLiquidGlassKey, defaultValue = false)
+    val isGlass = liquidGlassEnabled && backdrop != null
 
-    // ── Player state ──────────────────────────────────────────────────────
     val mediaMetadata   by playerConnection.mediaMetadata.collectAsState()
     val isPlaying       by playerConnection.isPlaying.collectAsState()
     val playbackState   by playerConnection.playbackState.collectAsState()
@@ -129,22 +122,12 @@ fun MiniPlayer(
     val canSkipNext     by playerConnection.canSkipNext.collectAsState()
     val isLoading        = playbackState == Player.STATE_BUFFERING
 
-    // ── Liked state ───────────────────────────────────────────────────────
     val songId      = mediaMetadata?.id ?: ""
     val librarySong by database.song(songId).collectAsState(initial = null)
     val isLiked     = librarySong?.song?.liked == true
 
-    // ── Palette background (animates when album art loads) ────────────────
     val background = remember { ColorAnimatable(Color(0xFF1E1E1E)) }
 
-    // background colour fed into drawBackdrop's onDrawSurface
-    val backgroundColor = when (miniPlayerBackground) {
-        MiniPlayerBackgroundStyle.TRANSPARENT -> Color.Transparent
-        MiniPlayerBackgroundStyle.PURE_BLACK  -> Color.Black
-        else -> background.value   // DEFAULT / BLUR / GRADIENT → palette colour
-    }
-
-    // ── Text colour from luminance ────────────────────────────────────────
     val luminance = remember(background.value) {
         val c = background.value
         0.2126f * c.red + 0.7152f * c.green + 0.0722f * c.blue
@@ -155,7 +138,6 @@ fun MiniPlayer(
         label         = "MiniPlayerTextColor",
     )
 
-    // ── Progress ──────────────────────────────────────────────────────────
     val progress = remember(positionState.longValue, durationState.longValue) {
         val dur = durationState.longValue
         if (dur > 0L && positionState.longValue >= 0L)
@@ -168,24 +150,14 @@ fun MiniPlayer(
         label         = "MiniPlayerProgress",
     )
 
-    // ── Shape ─────────────────────────────────────────────────────────────
-    // Xevrae: CircleShape when liquid glass, RoundedCornerShape(12) otherwise
-    val shape = if (isGlass) CircleShape else RoundedCornerShape(12.dp)
-
-    // ── Horizontal swipe offset (prev / next) ─────────────────────────────
+    val shape  = if (isGlass) CircleShape else RoundedCornerShape(12.dp)
     val offsetX = remember { Animatable(0f) }
 
-    // ── Outer wrapper ─────────────────────────────────────────────────────
     Box(
         modifier = modifier
             .fillMaxWidth()
             .height(MiniPlayerHeight),
     ) {
-        // ── Background box: clip + drawBackdrop (always when backdrop≠null) ──
-        // KEY FIX: In Dare's backdrop system, drawBackdrop must be used
-        // whenever backdrop≠null — even for non-glass styles — because the
-        // backdrop layer owns the compositing surface. The style only changes
-        // what onDrawSurface draws (solid palette colour vs frosted glass).
         Box(
             modifier = Modifier
                 .fillMaxSize()
@@ -196,12 +168,11 @@ fun MiniPlayer(
                             backdrop      = bd,
                             shape         = { shape },
                             effects       = {
-                                // Refraction shader only for glass + Android 13+
                                 if (isGlass && Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                     val refractionHeightPx = with(density) { 20.dp.toPx() }
                                     val refractionAmountPx = with(density) { 67.dp.toPx() }
                                     val cornerRadiusPx     = with(density) { 12.dp.toPx() }
-                                    val shaderSrc = """
+                                    val shaderSource = """
                                         uniform shader content;
                                         uniform float2 size;
                                         uniform float2 offset;
@@ -210,30 +181,95 @@ fun MiniPlayer(
                                         uniform float refractionAmount;
                                         uniform float depthEffect;
                                         uniform float chromaticAberration;
-                                        float radiusAt(float2 c,float4 r){if(c.x>=0.0){if(c.y<=0.0)return r.y;else return r.z;}else{if(c.y<=0.0)return r.x;else return r.w;}}
-                                        float sdRR(float2 c,float2 h,float r){float2 q=abs(c)-(h-float2(r));float o=length(max(q,0.0))-r;float i=min(max(q.x,q.y),0.0);return o+i;}
-                                        float2 gradSdRR(float2 c,float2 h,float r){float2 q=abs(c)-(h-float2(r));if(q.x>=0.0||q.y>=0.0){return sign(c)*normalize(max(q,0.0));}else{float gx=step(q.y,q.x);return sign(c)*float2(gx,1.0-gx);}}
-                                        float circleMap(float x){return 1.0-sqrt(1.0-x*x);}
-                                        half4 main(float2 coord){
-                                            float2 h=size*0.5;float2 cc=(coord+offset)-h;
-                                            float radius=radiusAt(coord,cornerRadii);
-                                            float sd=sdRR(cc,h,radius);
-                                            if(-sd>=refractionHeight){return content.eval(coord);}
-                                            sd=min(sd,0.0);
-                                            float d=circleMap(1.0--sd/refractionHeight)*refractionAmount;
-                                            float gr=min(radius*1.5,min(h.x,h.y));
-                                            float2 grad=normalize(gradSdRR(cc,h,gr)+depthEffect*normalize(cc));
-                                            float2 rc=coord+d*grad;
-                                            half4 color=half4(0.0);
-                                            half4 g=content.eval(rc);color.g+=g.g/3.5;color.a+=g.a/7.0;
-                                            half4 b=content.eval(rc);color.b+=b.b/3.0;color.a+=b.a/7.0;
-                                            half4 pu=content.eval(rc);color.r+=pu.r/7.0;color.b+=pu.b/3.0;color.a+=pu.a/7.0;
-                                            return color;}
+
+                                        float radiusAt(float2 coord, float4 radii) {
+                                            if (coord.x >= 0.0) {
+                                                if (coord.y <= 0.0) return radii.y;
+                                                else return radii.z;
+                                            } else {
+                                                if (coord.y <= 0.0) return radii.x;
+                                                else return radii.w;
+                                            }
+                                        }
+
+                                        float signedDistRoundedRect(float2 coord, float2 halfSize, float radius) {
+                                            float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
+                                            float outsideDist = length(max(cornerCoord, 0.0)) - radius;
+                                            float insideDist  = min(max(cornerCoord.x, cornerCoord.y), 0.0);
+                                            return outsideDist + insideDist;
+                                        }
+
+                                        float2 gradSignedDistRoundedRect(float2 coord, float2 halfSize, float radius) {
+                                            float2 cornerCoord = abs(coord) - (halfSize - float2(radius));
+                                            if (cornerCoord.x >= 0.0 || cornerCoord.y >= 0.0) {
+                                                return sign(coord) * normalize(max(cornerCoord, 0.0));
+                                            } else {
+                                                float gradX = step(cornerCoord.y, cornerCoord.x);
+                                                return sign(coord) * float2(gradX, 1.0 - gradX);
+                                            }
+                                        }
+
+                                        float circleMap(float xVal) {
+                                            return 1.0 - sqrt(1.0 - xVal * xVal);
+                                        }
+
+                                        half4 main(float2 coord) {
+                                            float2 halfSize      = size * 0.5;
+                                            float2 centeredCoord = (coord + offset) - halfSize;
+                                            float  radius        = radiusAt(coord, cornerRadii);
+                                            float  dist          = signedDistRoundedRect(centeredCoord, halfSize, radius);
+
+                                            if (-dist >= refractionHeight) {
+                                                return content.eval(coord);
+                                            }
+
+                                            dist = min(dist, 0.0);
+                                            float  dispAmount = circleMap(1.0 - (-dist / refractionHeight)) * refractionAmount;
+                                            float  gradRadius = min(radius * 1.5, min(halfSize.x, halfSize.y));
+                                            float2 gradVec    = normalize(
+                                                gradSignedDistRoundedRect(centeredCoord, halfSize, gradRadius)
+                                                + depthEffect * normalize(centeredCoord)
+                                            );
+                                            float2 refractCoord = coord + dispAmount * gradVec;
+                                            float  dispersion   = chromaticAberration
+                                                * ((centeredCoord.x * centeredCoord.y) / (halfSize.x * halfSize.y));
+                                            float2 disperseVec  = dispAmount * gradVec * dispersion;
+
+                                            half4 result = half4(0.0);
+                                            half4 redSample    = content.eval(refractCoord + disperseVec);
+                                            result.r += redSample.r / 3.5;
+                                            result.a += redSample.a / 7.0;
+                                            half4 orangeSample = content.eval(refractCoord + disperseVec * (2.0 / 3.0));
+                                            result.r += orangeSample.r / 3.5;
+                                            result.g += orangeSample.g / 7.0;
+                                            result.a += orangeSample.a / 7.0;
+                                            half4 yellowSample = content.eval(refractCoord + disperseVec * (1.0 / 3.0));
+                                            result.r += yellowSample.r / 3.5;
+                                            result.g += yellowSample.g / 3.5;
+                                            result.a += yellowSample.a / 7.0;
+                                            half4 greenSample  = content.eval(refractCoord);
+                                            result.g += greenSample.g / 3.5;
+                                            result.a += greenSample.a / 7.0;
+                                            half4 cyanSample   = content.eval(refractCoord - disperseVec * (1.0 / 3.0));
+                                            result.g += cyanSample.g / 3.5;
+                                            result.b += cyanSample.b / 3.0;
+                                            result.a += cyanSample.a / 7.0;
+                                            half4 blueSample   = content.eval(refractCoord - disperseVec * (2.0 / 3.0));
+                                            result.b += blueSample.b / 3.0;
+                                            result.a += blueSample.a / 7.0;
+                                            half4 purpleSample = content.eval(refractCoord - disperseVec);
+                                            result.r += purpleSample.r / 7.0;
+                                            result.b += purpleSample.b / 3.0;
+                                            result.a += purpleSample.a / 7.0;
+                                            return result;
+                                        }
                                     """.trimIndent()
-                                    val shader = RuntimeShader(shaderSrc)
+                                    val shader = RuntimeShader(shaderSource)
                                     shader.setFloatUniform("size", size.width, size.height)
                                     shader.setFloatUniform("offset", -padding, -padding)
-                                    shader.setFloatUniform("cornerRadii", floatArrayOf(cornerRadiusPx, cornerRadiusPx, cornerRadiusPx, cornerRadiusPx))
+                                    shader.setFloatUniform("cornerRadii", floatArrayOf(
+                                        cornerRadiusPx, cornerRadiusPx, cornerRadiusPx, cornerRadiusPx,
+                                    ))
                                     shader.setFloatUniform("refractionHeight", refractionHeightPx)
                                     shader.setFloatUniform("refractionAmount", -refractionAmountPx)
                                     shader.setFloatUniform("depthEffect", 1.0f)
@@ -242,34 +278,31 @@ fun MiniPlayer(
                                 }
                             },
                             onDrawSurface = {
-                                // Glass → frosted white tint; everything else → solid palette/black
                                 if (isGlass) drawRect(Color.White.copy(alpha = 0.12f))
-                                else         drawRect(backgroundColor)
+                                else         drawRect(background.value)
                             },
                         )
-                    } ?: Modifier.background(backgroundColor) // no backdrop → plain colour
+                    } ?: Modifier.background(background.value)
                 )
                 .border(
-                    width  = 1.dp,
-                    color  = Color.White.copy(alpha = if (isGlass) 0.25f else 0.10f),
-                    shape  = shape,
+                    width = 1.dp,
+                    color = Color.White.copy(alpha = if (isGlass) 0.25f else 0.10f),
+                    shape = shape,
                 ),
         ) {
-            // ── Content row ───────────────────────────────────────────────
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier          = Modifier.fillMaxSize(),
             ) {
                 Spacer(modifier = Modifier.size(8.dp))
 
-                // Inner Box — offsetX + horizontal drag (Xevrae exact structure)
                 Box(modifier = Modifier.weight(1f)) {
                     Row(
                         modifier = Modifier
                             .offset { IntOffset(offsetX.value.roundToInt(), 0) }
                             .pointerInput(Unit) {
                                 detectHorizontalDragGestures(
-                                    onDragStart  = {},
+                                    onDragStart      = {},
                                     onHorizontalDrag = { change: PointerInputChange, dragAmount: Float ->
                                         coroutineScope.launch {
                                             change.consume()
@@ -278,25 +311,25 @@ fun MiniPlayer(
                                     },
                                     onDragCancel = {
                                         coroutineScope.launch {
-                                            if (offsetX.value > 200)        playerConnection.seekToPrevious()
-                                            else if (offsetX.value < -120)  playerConnection.seekToNext()
+                                            if (offsetX.value > 200)       playerConnection.seekToPrevious()
+                                            else if (offsetX.value < -120) playerConnection.seekToNext()
                                             offsetX.animateTo(0f)
                                         }
                                     },
                                     onDragEnd = {
                                         coroutineScope.launch {
-                                            if (offsetX.value > 200)        playerConnection.seekToPrevious()
-                                            else if (offsetX.value < -120)  playerConnection.seekToNext()
+                                            if (offsetX.value > 200)       playerConnection.seekToPrevious()
+                                            else if (offsetX.value < -120) playerConnection.seekToNext()
                                             offsetX.animateTo(0f)
                                         }
                                     },
                                 )
                             },
                     ) {
-                        // Album art — also triggers palette extraction
                         AsyncImage(
                             model              = ImageRequest.Builder(context)
                                 .data(mediaMetadata?.thumbnailUrl)
+                                .allowHardware(false)
                                 .build(),
                             contentDescription = null,
                             contentScale       = ContentScale.Crop,
@@ -318,7 +351,6 @@ fun MiniPlayer(
 
                         Spacer(modifier = Modifier.width(10.dp))
 
-                        // Song info — slides on track change (Xevrae exact transition)
                         AnimatedContent(
                             targetState      = mediaMetadata,
                             modifier         = Modifier.weight(1f).fillMaxHeight(),
@@ -384,7 +416,6 @@ fun MiniPlayer(
 
                 Spacer(modifier = Modifier.width(15.dp))
 
-                // Heart / like
                 IconButton(
                     onClick  = { if (songId.isNotEmpty()) playerConnection.service.toggleLike() },
                     modifier = Modifier.size(30.dp),
@@ -401,7 +432,6 @@ fun MiniPlayer(
 
                 Spacer(modifier = Modifier.width(15.dp))
 
-                // Play/Pause or buffering spinner
                 Crossfade(targetState = isLoading, label = "MiniPlayerPlayState") { loading ->
                     if (loading) {
                         Box(modifier = Modifier.size(48.dp), contentAlignment = Alignment.Center) {
@@ -438,7 +468,6 @@ fun MiniPlayer(
                 Spacer(modifier = Modifier.width(15.dp))
             }
 
-            // Progress bar — 1dp at bottom edge (Xevrae exact layout)
             Box(
                 modifier = Modifier
                     .wrapContentSize(Alignment.Center)
