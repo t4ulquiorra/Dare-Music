@@ -99,6 +99,7 @@ import com.dare.music.constants.SwipeSensitivityKey
 import com.dare.music.constants.SwipeThumbnailKey
 import com.dare.music.constants.SwipeToRemoveSongKey
 import com.dare.music.constants.SwipeToSongKey
+import com.dare.music.constants.UseNewMiniPlayerDesignKey
 import com.dare.music.constants.UseNewPlayerDesignKey
 import com.dare.music.ui.component.DefaultDialog
 import com.dare.music.ui.component.EnumDialog
