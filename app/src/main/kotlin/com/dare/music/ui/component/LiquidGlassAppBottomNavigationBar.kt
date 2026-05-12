@@ -7,7 +7,6 @@ import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
-import androidx.compose.foundation.clickable
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.PaddingValues
@@ -43,6 +42,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
+import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
@@ -66,14 +66,14 @@ import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.Visibility
 import androidx.core.graphics.scale
 import androidx.navigation.NavController
-import androidx.navigation.compose.currentBackStackEntryAsState
+import com.dare.music.LocalPlayerConnection
 import com.dare.music.R
+import com.dare.music.models.MediaMetadata
 import com.dare.music.ui.screens.Screens
 import com.kyant.backdrop.Backdrop
-import androidx.compose.runtime.MutableLongState
-import com.dare.music.ui.player.MiniPlayer
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.withContext
 import java.nio.IntBuffer
@@ -89,8 +89,6 @@ private const val TAB_LIBRARY = 2
 fun LiquidGlassAppBottomNavigationBar(
     navController: NavController,
     backdrop: Backdrop,
-    positionState: MutableLongState,
-    durationState: MutableLongState,
     bottomNavScreens: List<Screens>,
     currentRoute: String?,
     onItemClick: (Screens, Boolean) -> Unit,
@@ -102,6 +100,14 @@ fun LiquidGlassAppBottomNavigationBar(
     val layer         = rememberGraphicsLayer()
     val luminanceAnim = remember { Animatable(0f) }
 
+    // ── Mini-player visibility ───────────────────────────────────────────────
+    val playerConn = LocalPlayerConnection.current
+    val currentSong by remember(playerConn) {
+        playerConn?.mediaMetadata ?: MutableStateFlow<MediaMetadata?>(null)
+    }.collectAsState()
+    val showMiniPlayer = currentSong != null
+
+    // ── Luminance-aware pill colour ──────────────────────────────────────────
     val pillColor by animateColorAsState(
         targetValue = colorLerp(
             MaterialTheme.colorScheme.surfaceVariant,
@@ -137,12 +143,17 @@ fun LiquidGlassAppBottomNavigationBar(
         }
     }
 
-    fun routeToIndex(route: String?): Int = when {
-        route == null -> TAB_HOME
-        route == bottomNavScreens.getOrNull(TAB_HOME)?.route -> TAB_HOME
-        route.startsWith(bottomNavScreens.getOrNull(TAB_SEARCH)?.route.orEmpty()) -> TAB_SEARCH
-        route == bottomNavScreens.getOrNull(TAB_LIBRARY)?.route -> TAB_LIBRARY
-        else -> TAB_HOME
+    // ── Nav state ────────────────────────────────────────────────────────────
+    // Mirrors AppNavigation.kt's isRouteSelected logic for search
+    fun routeToIndex(route: String?): Int {
+        if (route == null) return TAB_HOME
+        val searchRoute = bottomNavScreens.getOrNull(TAB_SEARCH)?.route ?: "search_input"
+        return when {
+            route == (bottomNavScreens.getOrNull(TAB_HOME)?.route ?: "home")    -> TAB_HOME
+            route == searchRoute || route.startsWith("search/")                  -> TAB_SEARCH
+            route == (bottomNavScreens.getOrNull(TAB_LIBRARY)?.route ?: "library") -> TAB_LIBRARY
+            else -> TAB_HOME
+        }
     }
 
     var selectedIndex         by rememberSaveable { mutableIntStateOf(routeToIndex(currentRoute)) }
@@ -156,27 +167,28 @@ fun LiquidGlassAppBottomNavigationBar(
         }
     }
 
+    val searchRoute = bottomNavScreens.getOrNull(TAB_SEARCH)?.route ?: "search_input"
     val isInSearchDestination = remember(currentRoute) {
-        currentRoute?.startsWith(bottomNavScreens.getOrNull(TAB_SEARCH)?.route.orEmpty()) == true
+        currentRoute == searchRoute || currentRoute?.startsWith("search/") == true
     }
 
     var isExpanded by rememberSaveable { mutableStateOf(true) }
     LaunchedEffect(isInSearchDestination) { isExpanded = !isInSearchDestination }
     LaunchedEffect(isScrolledToTop) { if (!isInSearchDestination) isExpanded = isScrolledToTop }
 
-    // Explicit types avoid T-inference errors with ConstraintSet
+    // Explicit types to avoid T-inference errors
     var updateConstraints: Boolean by remember { mutableStateOf(true) }
     var constraintSet: ConstraintSet by remember {
-        mutableStateOf(buildConstraintSet(showMiniPlayer = true, isExpanded = isExpanded))
+        mutableStateOf(buildConstraintSet(showMiniPlayer = showMiniPlayer, isExpanded = isExpanded))
     }
 
-    LaunchedEffect(isExpanded) {
-        constraintSet = buildConstraintSet(showMiniPlayer = true, isExpanded = isExpanded)
+    LaunchedEffect(showMiniPlayer, isExpanded) {
+        constraintSet = buildConstraintSet(showMiniPlayer = showMiniPlayer, isExpanded = isExpanded)
         updateConstraints = false
     }
     LaunchedEffect(updateConstraints) {
         if (updateConstraints) {
-            constraintSet = buildConstraintSet(showMiniPlayer = true, isExpanded = isExpanded)
+            constraintSet = buildConstraintSet(showMiniPlayer = showMiniPlayer, isExpanded = isExpanded)
             updateConstraints = false
         }
     }
@@ -205,7 +217,6 @@ fun LiquidGlassAppBottomNavigationBar(
         ) {
             HorizontalFloatingToolbar(
                 modifier = Modifier
-                    // TODO: .drawBackdropCustomShape(backdrop, layer, luminanceAnim.value, CircleShape)
                     .then(if (!isExpanded) Modifier.size(48.dp) else Modifier.wrapContentSize())
                     .onGloballyPositioned { updateConstraints = true },
                 contentPadding = PaddingValues(horizontal = if (isExpanded) 4.dp else 0.dp),
@@ -238,20 +249,18 @@ fun LiquidGlassAppBottomNavigationBar(
                                     },
                                     shape = CircleShape,
                                     colors = ButtonDefaults.buttonColors().copy(
-                                        containerColor = if (selectedIndex == idx) pillColor else Color.Transparent,
-                                        contentColor   = if (selectedIndex == idx) MaterialTheme.colorScheme.primary else Color.White,
+                                        containerColor       = if (selectedIndex == idx) pillColor else Color.Transparent,
+                                        contentColor         = if (selectedIndex == idx) MaterialTheme.colorScheme.primary else Color.White,
                                         disabledContainerColor = Color.Transparent,
                                     ),
                                 ) {
                                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
                                         Icon(
-                                            imageVector = if (idx == TAB_HOME) Icons.Rounded.Home else Icons.Rounded.LibraryMusic,
+                                            imageVector        = if (idx == TAB_HOME) Icons.Rounded.Home else Icons.Rounded.LibraryMusic,
                                             contentDescription = null,
                                         )
                                         Text(
-                                            text = stringResource(
-                                                if (idx == TAB_HOME) R.string.home else R.string.filter_library,
-                                            ),
+                                            text  = stringResource(if (idx == TAB_HOME) R.string.home else R.string.filter_library),
                                             style = if (selectedIndex == idx) {
                                                 MaterialTheme.typography.bodySmall.copy(fontWeight = FontWeight.Bold)
                                             } else {
@@ -305,15 +314,14 @@ fun LiquidGlassAppBottomNavigationBar(
                 exit  = slideOutHorizontally(tween(100)) { -it / 2 },
             ) {
                 FloatingActionButton(
-                    modifier = Modifier,
-                    // TODO: .drawBackdropCustomShape(backdrop, layer, luminanceAnim.value, CircleShape)
-                    elevation = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-                    onClick = {
+                    modifier      = Modifier,
+                    elevation     = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+                    onClick       = {
                         previousSelectedIndex = selectedIndex
-                        selectedIndex = TAB_SEARCH
+                        selectedIndex         = TAB_SEARCH
                         bottomNavScreens.getOrNull(TAB_SEARCH)?.let { onItemClick(it, false) }
                     },
-                    shape = CircleShape,
+                    shape         = CircleShape,
                     containerColor = Color.Transparent,
                     contentColor   = Color.Transparent,
                 ) {
@@ -322,16 +330,14 @@ fun LiquidGlassAppBottomNavigationBar(
             }
         }
 
-        MiniPlayer(
+        DareMiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
                 .padding(horizontal = 12.dp)
                 .height(56.dp)
-                .layoutId("miniPlayer")
-                .clickable { onOpenNowPlaying() },
-            positionState = positionState,
-            durationState = durationState,
-            backdrop = backdrop,
+                .layoutId("miniPlayer"),
+            onClick  = onOpenNowPlaying,
+            onClose  = onStopPlayer,
         )
     }
 }

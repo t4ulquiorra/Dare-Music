@@ -144,6 +144,7 @@ import com.dare.music.constants.UpdateNotificationsEnabledKey
 import com.dare.music.db.MusicDatabase
 import com.dare.music.db.entities.SearchHistory
 import com.dare.music.extensions.toEnum
+import com.dare.music.models.MediaMetadata
 import com.dare.music.models.toMediaMetadata
 import com.dare.music.playback.DownloadUtil
 import com.dare.music.playback.MusicService
@@ -188,6 +189,7 @@ import com.valentinilk.shimmer.LocalShimmerTheme
 import dagger.hilt.android.AndroidEntryPoint
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.delay
+import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.collectLatest
 import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
@@ -254,9 +256,8 @@ class MainActivity : ComponentActivity() {
 
     private fun safeUnbindService(source: String) {
         if (!isServiceBound) return
-        try {
-            unbindService(serviceConnection)
-        } catch (e: IllegalArgumentException) {
+        try { unbindService(serviceConnection) }
+        catch (e: IllegalArgumentException) {
             Timber.tag("MainActivity").w(e, "Not bound when unbinding in $source")
         } finally {
             isServiceBound = false
@@ -288,9 +289,7 @@ class MainActivity : ComponentActivity() {
         super.onDestroy()
         if (dataStore.get(StopMusicOnTaskClearKey, false) &&
             playerConnection?.isPlaying?.value == true && isFinishing
-        ) {
-            stopService(Intent(this, MusicService::class.java))
-        }
+        ) { stopService(Intent(this, MusicService::class.java)) }
         playerConnection?.dispose()
         playerConnection         = null
         playerConnectionSnapshot = null
@@ -299,11 +298,8 @@ class MainActivity : ComponentActivity() {
 
     override fun onNewIntent(intent: Intent) {
         super.onNewIntent(intent)
-        if (::navController.isInitialized) {
-            handleDeepLinkIntent(intent, navController)
-        } else {
-            pendingIntent = intent
-        }
+        if (::navController.isInitialized) handleDeepLinkIntent(intent, navController)
+        else pendingIntent = intent
     }
 
     @SuppressLint("UnusedMaterial3ScaffoldPaddingParameter")
@@ -381,14 +377,10 @@ class MainActivity : ComponentActivity() {
                                             .setSmallIcon(R.drawable.update)
                                             .setContentTitle(getString(R.string.update_available_title))
                                             .setContentText(releaseInfo.versionName)
-                                            .setContentIntent(pending)
-                                            .setAutoCancel(true)
-                                            .build()
+                                            .setContentIntent(pending).setAutoCancel(true).build()
                                         if (Build.VERSION.SDK_INT < Build.VERSION_CODES.TIRAMISU ||
                                             ContextCompat.checkSelfPermission(this@MainActivity, Manifest.permission.POST_NOTIFICATIONS) == PackageManager.PERMISSION_GRANTED
-                                        ) {
-                                            NotificationManagerCompat.from(this@MainActivity).notify(1001, notif)
-                                        }
+                                        ) { NotificationManagerCompat.from(this@MainActivity).notify(1001, notif) }
                                     }
                                 }
                             }
@@ -443,7 +435,7 @@ class MainActivity : ComponentActivity() {
         LaunchedEffect(playerConnection, enableDynamicTheme, selectedThemeColor) {
             val pc = playerConnection
             if (!enableDynamicTheme || pc == null) { themeColor = selectedThemeColor; return@LaunchedEffect }
-            pc.service.currentMediaMetadata.collectLatest { song ->
+            pc.mediaMetadata.collectLatest { song ->
                 if (song?.thumbnailUrl != null) {
                     withContext(Dispatchers.IO) {
                         try {
@@ -528,34 +520,47 @@ class MainActivity : ComponentActivity() {
                     mutableStateOf(TextFieldValue())
                 }
 
-                val currentRoute   by remember { derivedStateOf { navBackStackEntry?.destination?.route } }
-                val inSearchScreen by remember { derivedStateOf { currentRoute?.startsWith("search/") == true } }
+                val currentRoute by remember { derivedStateOf { navBackStackEntry?.destination?.route } }
+
+                // search_input = search bar; search/* = results
+                val inSearchScreen by remember {
+                    derivedStateOf {
+                        currentRoute == "search_input" || currentRoute?.startsWith("search/") == true
+                    }
+                }
 
                 val shouldShowNavigationBar = remember(currentRoute) { currentRoute != "wrapped" }
                 val showRail                = false
 
+                // Screens set this via savedStateHandle to drive toolbar expand/collapse
                 val isScrolledToTop by remember(navBackStackEntry) {
                     derivedStateOf {
                         navBackStackEntry?.savedStateHandle?.get<Boolean>("isScrolledToTop") ?: true
                     }
                 }
 
-                // Hoisted here so BottomSheetPlayer can be placed outside Scaffold
+                // Hoisted for BottomSheetPlayer overlay
                 val positionState = remember { mutableLongStateOf(0L) }
                 val durationState = remember { mutableLongStateOf(0L) }
 
+                // Current song for insets calculation
+                val currentMediaMetadata by remember(playerConnection) {
+                    playerConnection?.mediaMetadata ?: MutableStateFlow<MediaMetadata?>(null)
+                }.collectAsState()
+                val isMusicPlaying = currentMediaMetadata != null
+
+                // collapsedBound = 0 → no peeking collapsed state.
+                // DareMiniPlayer (inside glass nav bar) is the mini-player UI.
+                // BottomSheetPlayer expands only when explicitly triggered.
                 val playerBottomSheetState = rememberBottomSheetState(
                     dismissedBound = 0.dp,
-                    collapsedBound = 1.dp,
                     expandedBound  = maxHeight,
                 )
 
-                val playerAwareWindowInsets = remember(
-                    bottomInset, shouldShowNavigationBar, playerBottomSheetState.isDismissed,
-                ) {
+                val playerAwareWindowInsets = remember(bottomInset, shouldShowNavigationBar, isMusicPlaying) {
                     var bottom = bottomInset
                     if (shouldShowNavigationBar && !showRail) bottom += NavigationBarHeight
-                    if (!playerBottomSheetState.isDismissed)  bottom += MiniPlayerHeight
+                    if (isMusicPlaying) bottom += MiniPlayerHeight
                     windowInsets
                         .only(WindowInsetsSides.Horizontal + WindowInsetsSides.Top)
                         .add(WindowInsets(top = AppBarHeight, bottom = bottom))
@@ -570,7 +575,7 @@ class MainActivity : ComponentActivity() {
 
                 LaunchedEffect(navBackStackEntry) {
                     if (inSearchScreen) {
-                        val raw = navBackStackEntry?.arguments?.getString("query")!!
+                        val raw = navBackStackEntry?.arguments?.getString("query") ?: return@LaunchedEffect
                         val q   = try { URLDecoder.decode(raw, "UTF-8") } catch (_: IllegalArgumentException) { raw }
                         onQueryChange(TextFieldValue(q, TextRange(q.length)))
                     } else if (navigationItems.fastAny { it.route == navBackStackEntry?.destination?.route }) {
@@ -591,7 +596,7 @@ class MainActivity : ComponentActivity() {
                     val player = playerConnection?.player ?: return@DisposableEffect onDispose {}
                     val listener = object : Player.Listener {
                         override fun onMediaItemTransition(mediaItem: MediaItem?, reason: Int) {
-                            // Expansion triggered by tapping DareMiniPlayer
+                            // BottomSheetPlayer expands only on explicit tap via DareMiniPlayer
                         }
                     }
                     player.addListener(listener)
@@ -686,15 +691,15 @@ class MainActivity : ComponentActivity() {
                                                 }) {
                                                     if (accountImageUrl != null) {
                                                         AsyncImage(
-                                                            model = accountImageUrl,
+                                                            model              = accountImageUrl,
                                                             contentDescription = stringResource(R.string.account),
-                                                            modifier = Modifier.size(24.dp).clip(CircleShape),
+                                                            modifier           = Modifier.size(24.dp).clip(CircleShape),
                                                         )
                                                     } else {
                                                         Icon(
-                                                            painter = painterResource(R.drawable.account),
+                                                            painter           = painterResource(R.drawable.account),
                                                             contentDescription = stringResource(R.string.account),
-                                                            modifier = Modifier.size(24.dp),
+                                                            modifier          = Modifier.size(24.dp),
                                                         )
                                                     }
                                                 }
@@ -702,10 +707,10 @@ class MainActivity : ComponentActivity() {
                                         },
                                         scrollBehavior = topAppBarScrollBehavior,
                                         colors = TopAppBarDefaults.topAppBarColors(
-                                            containerColor         = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
-                                            scrolledContainerColor = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
-                                            titleContentColor      = MaterialTheme.colorScheme.onSurface,
-                                            actionIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
+                                            containerColor          = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
+                                            scrolledContainerColor  = if (pureBlack) Color.Black else MaterialTheme.colorScheme.surfaceContainer,
+                                            titleContentColor       = MaterialTheme.colorScheme.onSurface,
+                                            actionIconContentColor  = MaterialTheme.colorScheme.onSurfaceVariant,
                                             navigationIconContentColor = MaterialTheme.colorScheme.onSurfaceVariant,
                                         ),
                                         modifier = Modifier.windowInsetsPadding(
@@ -754,8 +759,6 @@ class MainActivity : ComponentActivity() {
                             LiquidGlassAppBottomNavigationBar(
                                 navController    = navController,
                                 backdrop         = glassBackdrop,
-                positionState    = positionState,
-                durationState    = durationState,
                                 bottomNavScreens = navigationItems.take(3),
                                 currentRoute     = currentRoute,
                                 onItemClick      = onNavItemClick,
@@ -814,7 +817,7 @@ class MainActivity : ComponentActivity() {
                     } // end Scaffold
 
                     // ── Overlays ─────────────────────────────────────────────
-                    // BottomSheetPlayer lives OUTSIDE Scaffold so it never
+                    // BottomSheetPlayer lives outside Scaffold so its size never
                     // inflates the bottomBar measurement height.
                     if (currentRoute != "wrapped") {
                         BottomSheetPlayer(
@@ -874,7 +877,7 @@ class MainActivity : ComponentActivity() {
     } // end DareApp
 
     // =========================================================================
-    // Class-level private helpers
+    // Class-level private helpers — NOT inside DareApp
     // =========================================================================
 
     private fun handleRecognitionIntent(intent: Intent, navController: NavHostController) {
@@ -916,9 +919,7 @@ class MainActivity : ComponentActivity() {
                             }
                         }.onFailure { reportException(it) }
                     }
-                } else {
-                    navController.navigate("online_playlist/$id")
-                }
+                } else { navController.navigate("online_playlist/$id") }
             }
             "browse"       -> uri.lastPathSegment?.let { navController.navigate("album/$it") }
             "channel", "c" -> uri.lastPathSegment?.let { navController.navigate("artist/$it") }
@@ -980,7 +981,7 @@ class MainActivity : ComponentActivity() {
 } // end MainActivity
 
 // =============================================================================
-// Composition locals
+// Composition locals — top-level so all files in the project can import them
 // =============================================================================
 
 val LocalDatabase               = staticCompositionLocalOf<MusicDatabase>         { error("No database provided") }

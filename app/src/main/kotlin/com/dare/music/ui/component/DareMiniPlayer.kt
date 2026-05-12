@@ -24,7 +24,7 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
-import androidx.lifecycle.compose.collectAsStateWithLifecycle
+import androidx.compose.runtime.collectAsState
 import coil3.compose.AsyncImage
 import com.dare.music.LocalPlayerConnection
 
@@ -35,9 +35,10 @@ fun DareMiniPlayer(
     onClose: () -> Unit = {},
 ) {
     val playerConnection = LocalPlayerConnection.current ?: return
-    val currentSong by playerConnection.service.currentMediaMetadata
-        .collectAsStateWithLifecycle(initialValue = null)
-    val isPlaying by playerConnection.isPlaying.collectAsStateWithLifecycle()
+    val currentSong by playerConnection.mediaMetadata.collectAsState()
+    val isPlaying   by playerConnection.isPlaying.collectAsState()
+
+    if (currentSong == null) return
 
     Row(
         modifier = modifier
@@ -48,41 +49,42 @@ fun DareMiniPlayer(
         horizontalArrangement = Arrangement.spacedBy(12.dp),
     ) {
         AsyncImage(
-            model = currentSong?.thumbnailUrl,
+            model              = currentSong?.thumbnailUrl,
             contentDescription = null,
-            contentScale = ContentScale.Crop,
-            modifier = Modifier
+            contentScale       = ContentScale.Crop,
+            modifier           = Modifier
                 .size(40.dp)
                 .clip(RoundedCornerShape(6.dp)),
         )
         Column(
-            modifier = Modifier.weight(1f),
+            modifier            = Modifier.weight(1f),
             verticalArrangement = Arrangement.Center,
         ) {
             Text(
-                text = currentSong?.title.orEmpty(),
-                style = MaterialTheme.typography.bodyMedium,
+                text     = currentSong?.title ?: "",
+                style    = MaterialTheme.typography.bodyMedium,
                 maxLines = 1,
                 overflow = TextOverflow.Ellipsis,
             )
-            currentSong?.artists?.joinToString { it.name }?.takeIf { it.isNotEmpty() }?.let {
+            val artists = currentSong?.artists?.joinToString { it.name }.orEmpty()
+            if (artists.isNotEmpty()) {
                 Text(
-                    text = it,
-                    style = MaterialTheme.typography.bodySmall,
+                    text     = artists,
+                    style    = MaterialTheme.typography.bodySmall,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
-                    color = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
+                    color    = MaterialTheme.colorScheme.onSurface.copy(alpha = 0.7f),
                 )
             }
         }
         IconButton(
             onClick = {
                 if (isPlaying) playerConnection.player.pause()
-                else playerConnection.player.play()
+                else           playerConnection.player.play()
             },
         ) {
             Icon(
-                imageVector = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
+                imageVector        = if (isPlaying) Icons.Rounded.Pause else Icons.Rounded.PlayArrow,
                 contentDescription = null,
             )
         }
