@@ -1,9 +1,10 @@
 package com.dare.music.ui.component
 
-import android.graphics.Bitmap
+import android.graphics.RenderEffect
+import android.graphics.Shader
+import android.os.Build
 import androidx.compose.animation.AnimatedVisibility
 import androidx.compose.animation.animateColorAsState
-import androidx.compose.animation.core.Animatable
 import androidx.compose.animation.core.tween
 import androidx.compose.animation.slideInHorizontally
 import androidx.compose.animation.slideOutHorizontally
@@ -22,6 +23,7 @@ import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.wrapContentSize
 import androidx.compose.foundation.shape.CircleShape
+import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.outlined.Home
 import androidx.compose.material.icons.outlined.Search
@@ -52,8 +54,6 @@ import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.asAndroidBitmap
-import androidx.compose.ui.graphics.rememberGraphicsLayer
 import androidx.compose.ui.layout.layoutId
 import androidx.compose.ui.layout.onGloballyPositioned
 import androidx.compose.ui.platform.LocalDensity
@@ -64,25 +64,37 @@ import androidx.constraintlayout.compose.ConstraintLayout
 import androidx.constraintlayout.compose.ConstraintSet
 import androidx.constraintlayout.compose.Dimension
 import androidx.constraintlayout.compose.Visibility
-import androidx.core.graphics.scale
 import androidx.navigation.NavController
 import com.dare.music.LocalPlayerConnection
 import com.dare.music.R
 import com.dare.music.models.MediaMetadata
 import com.dare.music.ui.screens.Screens
 import com.kyant.backdrop.Backdrop
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.delay
+import com.kyant.backdrop.drawBackdrop
+import com.kyant.backdrop.effects.effect
 import kotlinx.coroutines.flow.MutableStateFlow
-import kotlinx.coroutines.isActive
-import kotlinx.coroutines.withContext
-import java.nio.IntBuffer
-import kotlin.time.Duration.Companion.seconds
-import androidx.compose.ui.graphics.lerp as colorLerp
 
 private const val TAB_HOME    = 0
 private const val TAB_SEARCH  = 1
 private const val TAB_LIBRARY = 2
+
+// Shared blur effect used on both the toolbar pill and the search FAB
+private fun Modifier.glassBlur(backdrop: Backdrop): Modifier =
+    drawBackdrop(
+        backdrop      = backdrop,
+        shape         = { RoundedCornerShape(50) },
+        effects       = {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                effect(
+                    RenderEffect.createBlurEffect(40f, 40f, Shader.TileMode.CLAMP)
+                )
+            }
+        },
+        onDrawSurface = {
+            // Dark tinted frosted-glass surface — same approach as MiniPlayer.kt
+            drawRect(Color.Black.copy(alpha = 0.38f))
+        },
+    )
 
 @OptIn(ExperimentalMaterial3ExpressiveApi::class)
 @Composable
@@ -96,61 +108,22 @@ fun LiquidGlassAppBottomNavigationBar(
     onStopPlayer: () -> Unit,
     isScrolledToTop: Boolean = true,
 ) {
-    val density       = LocalDensity.current
-    val layer         = rememberGraphicsLayer()
-    val luminanceAnim = remember { Animatable(0f) }
+    val density = LocalDensity.current
 
     // ── Mini-player visibility ───────────────────────────────────────────────
-    val playerConn = LocalPlayerConnection.current
+    val playerConn  = LocalPlayerConnection.current
     val currentSong by remember(playerConn) {
         playerConn?.mediaMetadata ?: MutableStateFlow<MediaMetadata?>(null)
     }.collectAsState()
     val showMiniPlayer = currentSong != null
 
-    // ── Luminance-aware pill colour ──────────────────────────────────────────
-    val pillColor by animateColorAsState(
-        targetValue = colorLerp(
-            MaterialTheme.colorScheme.surfaceVariant,
-            MaterialTheme.colorScheme.surface,
-            luminanceAnim.value * 1.25f,
-        ),
-        animationSpec = tween(1000),
-        label = "PillColor",
-    )
-
-    LaunchedEffect(layer) {
-        val buffer = IntBuffer.allocate(25)
-        while (isActive) {
-            try {
-                withContext(Dispatchers.IO) {
-                    val bmp = layer.toImageBitmap()
-                        .asAndroidBitmap()
-                        .scale(5, 5, false)
-                        .copy(Bitmap.Config.ARGB_8888, false)
-                    buffer.rewind()
-                    bmp.copyPixelsToBuffer(buffer)
-                }
-            } catch (_: Exception) {}
-            val avg = (0 until 25).fold(0.0) { acc, i ->
-                val c = buffer.get(i)
-                val r = (c shr 16 and 0xFF) / 255.0
-                val g = (c shr  8 and 0xFF) / 255.0
-                val b = (c        and 0xFF) / 255.0
-                acc + 0.2126 * r + 0.7152 * g + 0.0722 * b
-            } / 25.0
-            luminanceAnim.animateTo(avg.coerceAtMost(0.8).toFloat(), tween(500))
-            delay(1.seconds)
-        }
-    }
-
     // ── Nav state ────────────────────────────────────────────────────────────
-    // Mirrors AppNavigation.kt's isRouteSelected logic for search
     fun routeToIndex(route: String?): Int {
         if (route == null) return TAB_HOME
         val searchRoute = bottomNavScreens.getOrNull(TAB_SEARCH)?.route ?: "search_input"
         return when {
-            route == (bottomNavScreens.getOrNull(TAB_HOME)?.route ?: "home")    -> TAB_HOME
-            route == searchRoute || route.startsWith("search/")                  -> TAB_SEARCH
+            route == (bottomNavScreens.getOrNull(TAB_HOME)?.route ?: "home")       -> TAB_HOME
+            route == searchRoute || route.startsWith("search/")                     -> TAB_SEARCH
             route == (bottomNavScreens.getOrNull(TAB_LIBRARY)?.route ?: "library") -> TAB_LIBRARY
             else -> TAB_HOME
         }
@@ -176,12 +149,11 @@ fun LiquidGlassAppBottomNavigationBar(
     LaunchedEffect(isInSearchDestination) { isExpanded = !isInSearchDestination }
     LaunchedEffect(isScrolledToTop) { if (!isInSearchDestination) isExpanded = isScrolledToTop }
 
-    // Explicit types to avoid T-inference errors
+    // Explicit types avoid T-inference errors with ConstraintSet
     var updateConstraints: Boolean by remember { mutableStateOf(true) }
     var constraintSet: ConstraintSet by remember {
         mutableStateOf(buildConstraintSet(showMiniPlayer = showMiniPlayer, isExpanded = isExpanded))
     }
-
     LaunchedEffect(showMiniPlayer, isExpanded) {
         constraintSet = buildConstraintSet(showMiniPlayer = showMiniPlayer, isExpanded = isExpanded)
         updateConstraints = false
@@ -193,21 +165,16 @@ fun LiquidGlassAppBottomNavigationBar(
         }
     }
 
-    val searchIconTint by animateColorAsState(
-        targetValue = if (luminanceAnim.value > 0.6f) Color.Black else Color.White,
-        animationSpec = tween(500),
-        label = "SearchIconTint",
-    )
-
     ConstraintLayout(
-        constraintSet = constraintSet,
-        modifier = Modifier
+        constraintSet      = constraintSet,
+        modifier           = Modifier
             .fillMaxWidth()
             .padding(WindowInsets.navigationBars.asPaddingValues())
             .padding(bottom = 8.dp)
             .imePadding(),
         animateChangesSpec = tween<Float>(300),
     ) {
+        // ── Toolbar pill ──────────────────────────────────────────────────────
         Row(
             verticalAlignment = Alignment.CenterVertically,
             modifier = Modifier
@@ -218,6 +185,8 @@ fun LiquidGlassAppBottomNavigationBar(
             HorizontalFloatingToolbar(
                 modifier = Modifier
                     .then(if (!isExpanded) Modifier.size(48.dp) else Modifier.wrapContentSize())
+                    // Glass blur applied AFTER size is set so the shape covers the right area
+                    .glassBlur(backdrop)
                     .onGloballyPositioned { updateConstraints = true },
                 contentPadding = PaddingValues(horizontal = if (isExpanded) 4.dp else 0.dp),
                 colors = FloatingToolbarDefaults
@@ -226,6 +195,7 @@ fun LiquidGlassAppBottomNavigationBar(
                 expanded = isExpanded,
                 trailingContent = {
                     var buttonSize by remember { mutableStateOf(0.dp to 0.dp) }
+                    // Home + Library (Search is separate FAB)
                     bottomNavScreens
                         .filterIndexed { index, _ -> index != TAB_SEARCH }
                         .forEach { screen ->
@@ -249,8 +219,8 @@ fun LiquidGlassAppBottomNavigationBar(
                                     },
                                     shape = CircleShape,
                                     colors = ButtonDefaults.buttonColors().copy(
-                                        containerColor       = if (selectedIndex == idx) pillColor else Color.Transparent,
-                                        contentColor         = if (selectedIndex == idx) MaterialTheme.colorScheme.primary else Color.White,
+                                        containerColor       = if (selectedIndex == idx) Color.White.copy(alpha = 0.20f) else Color.Transparent,
+                                        contentColor         = Color.White,
                                         disabledContainerColor = Color.Transparent,
                                     ),
                                 ) {
@@ -258,6 +228,7 @@ fun LiquidGlassAppBottomNavigationBar(
                                         Icon(
                                             imageVector        = if (idx == TAB_HOME) Icons.Rounded.Home else Icons.Rounded.LibraryMusic,
                                             contentDescription = null,
+                                            tint               = Color.White,
                                         )
                                         Text(
                                             text  = stringResource(if (idx == TAB_HOME) R.string.home else R.string.filter_library),
@@ -266,7 +237,7 @@ fun LiquidGlassAppBottomNavigationBar(
                                             } else {
                                                 MaterialTheme.typography.bodySmall
                                             },
-                                            color = if (selectedIndex == idx) MaterialTheme.colorScheme.primary else Color.White,
+                                            color = Color.White,
                                         )
                                     }
                                 }
@@ -274,24 +245,23 @@ fun LiquidGlassAppBottomNavigationBar(
                         }
                 },
             ) {
+                // Collapsed icon — shows selected tab
                 if (!isExpanded) {
                     IconButton(
                         modifier = Modifier.size(FloatingToolbarDefaults.ContainerSize.value.dp),
-                        shape = CircleShape,
-                        onClick = {
+                        shape    = CircleShape,
+                        onClick  = {
                             if (selectedIndex == TAB_SEARCH) {
                                 val destination = bottomNavScreens.getOrNull(previousSelectedIndex)
                                     ?: bottomNavScreens.first()
-                                selectedIndex = previousSelectedIndex
+                                selectedIndex         = previousSelectedIndex
                                 previousSelectedIndex = TAB_SEARCH
                                 onItemClick(destination, false)
                             } else {
                                 isExpanded = true
                             }
                         },
-                        colors = IconButtonDefaults.iconButtonColors(
-                            contentColor = MaterialTheme.colorScheme.primary,
-                        ),
+                        colors = IconButtonDefaults.iconButtonColors(contentColor = Color.White),
                     ) {
                         Icon(
                             imageVector = when (selectedIndex) {
@@ -308,28 +278,30 @@ fun LiquidGlassAppBottomNavigationBar(
 
             if (isExpanded) Spacer(Modifier.size(12.dp))
 
+            // ── Search FAB ────────────────────────────────────────────────────
             AnimatedVisibility(
                 visible = !isInSearchDestination && isExpanded,
-                enter = slideInHorizontally(tween(100)) { it / 2 },
-                exit  = slideOutHorizontally(tween(100)) { -it / 2 },
+                enter   = slideInHorizontally(tween(100)) { it / 2 },
+                exit    = slideOutHorizontally(tween(100)) { -it / 2 },
             ) {
                 FloatingActionButton(
-                    modifier      = Modifier,
-                    elevation     = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
-                    onClick       = {
+                    modifier       = Modifier.glassBlur(backdrop),
+                    elevation      = FloatingActionButtonDefaults.elevation(0.dp, 0.dp, 0.dp, 0.dp),
+                    onClick        = {
                         previousSelectedIndex = selectedIndex
                         selectedIndex         = TAB_SEARCH
                         bottomNavScreens.getOrNull(TAB_SEARCH)?.let { onItemClick(it, false) }
                     },
-                    shape         = CircleShape,
+                    shape          = CircleShape,
                     containerColor = Color.Transparent,
                     contentColor   = Color.Transparent,
                 ) {
-                    Icon(Icons.Outlined.Search, contentDescription = null, tint = searchIconTint)
+                    Icon(Icons.Outlined.Search, contentDescription = null, tint = Color.White)
                 }
             }
         }
 
+        // ── Mini-player ───────────────────────────────────────────────────────
         DareMiniPlayer(
             modifier = Modifier
                 .fillMaxWidth()
